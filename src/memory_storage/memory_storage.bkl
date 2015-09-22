@@ -1,0 +1,37 @@
+action builddir-memory-storage {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program full_memory_storage_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		memory_db_schema.h
+	}
+	sources { 
+		full_memory_storage.c 
+		memory_db_schema.c
+	}
+}
+
+
+program memory_disk_hybrid_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		memory_db_schema.h
+		disk_db_schema.h
+	}
+	sources { 
+		memory_disk_hybrid.c 
+		memory_db_schema.c
+		disk_db_schema.c
+	}
+}

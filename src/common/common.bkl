@@ -1,0 +1,11 @@
+template src_examples_common {
+	includedirs += @srcdir;
+
+	headers {
+		portable_inttypes.h
+	}
+	sources {
+		main.c
+		db_main.c
+	}
+}

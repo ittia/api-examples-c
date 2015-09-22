@@ -1,0 +1,114 @@
+action builddir-data-model {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program schema_upgrade_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		schema_upgrade_schema.h
+	}
+
+	sources { 
+		schema_upgrade.c
+		schema_upgrade_schema_v1.c
+		schema_upgrade_schema.c
+	}
+}
+
+
+program foreign_key_constraints_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		foreign_key_constraints_db_schema.h
+	}
+	sources { 
+		foreign_key_constraints.c 
+		foreign_key_constraints_db_schema.c
+	}
+}
+
+
+program unicode_character_strings_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		unicode_character_strings.c 
+	}
+}
+
+
+program datetime_intervals_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		datetime_intervals.c 
+	}
+}
+
+
+program text_import_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		csv_import_export.h
+		text_exchange_schema.h
+	}
+	sources { 
+		text_exchange_schema.c
+		text_import.c 
+		csv_import_export.c
+	}
+}
+
+
+program text_export_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		csv_import_export.h
+		text_exchange_schema.h
+	}
+	sources { 
+		text_exchange_schema.c
+		text_export.c 
+		csv_import_export.c
+	}
+}
+
+
+program sql_export_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		csv_import_export.h
+		text_exchange_schema.h
+	}
+	sources { 
+		sql_export.c 
+		csv_import_export.c
+	}
+}

@@ -1,0 +1,29 @@
+action builddir-security {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program storage_encryption_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		storage_encryption.c 
+	}
+}
+
+
+program connection_authentication_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		connection_authentication.c 
+	}
+}
+
+

@@ -1,0 +1,53 @@
+toolsets = gnu vs2013 vs2012 vs2010;
+archs = x86 x86_64;
+
+import src/src.bkl;
+
+setting ITTIA_DB_HOME {
+	help = "Path to ITTIA DB SDK";
+	if ( $toolset == gnu ) {
+		default = /opt/ittiadb;
+	}
+}
+
+if ( $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
+	ITTIA_DB_HOME = @srcdir/ittiadb;
+}
+
+template include_ittia_db {
+	includedirs += $(ITTIA_DB_HOME)/include;
+}
+
+template api_ittia_db_c : include_ittia_db {
+	libdirs += $(ITTIA_DB_HOME)/lib;
+	libs += ittiasql;
+
+	ittiasql_dll = @srcdir/ittiadb/bin/ittiasql.dll;
+	if ( $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
+		post-build-commands += "copy \"$(ittiasql_dll)\" \"\$(OutDir)\"";
+	}
+}
+
+template api_ittia_db_cpp : include_ittia_db {
+	deps += dbcppapi;
+}
+
+template include_dbsupport {
+	if ( $toolset == gnu ) {
+		dbs_path = $(ITTIA_DB_HOME)/share/doc/ittiadb/examples;
+	}
+	if ( $toolset != gnu ) {
+		dbs_path = $(ITTIA_DB_HOME)/src/dbsupport;
+	}
+	includedirs += $(dbs_path);
+}
+
+template src_dbs_error_info : include_dbsupport {
+	headers { $(dbs_path)/dbs_error_info.h }
+	sources { $(dbs_path)/dbs_error_info.c }
+}
+
+template src_dbs_schema : include_dbsupport {
+	headers { $(dbs_path)/dbs_schema.h }
+	sources { $(dbs_path)/dbs_schema.c }
+}

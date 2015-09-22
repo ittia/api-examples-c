@@ -1,0 +1,27 @@
+action builddir-sql {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program sql_select_query_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		sql_select_query.c 
+	}
+}
+
+
+program sql_parameters_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		sql_parameters.c 
+	}
+}

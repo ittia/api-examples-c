@@ -1,0 +1,47 @@
+action builddir-shared-access {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+
+program embedded_database_server_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		embedded_database_server.c 
+	}
+}
+
+
+program online_backup_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		thread_utils.h
+	}
+	sources {
+		online_backup.c
+		thread_utils.c
+	}
+}
+
+
+program data_change_notification_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { 
+		data_change_notification.c 
+		thread_utils.c
+	}
+}
+
+

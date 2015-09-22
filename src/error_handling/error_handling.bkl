@@ -1,0 +1,35 @@
+action builddir-error-handling {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program transaction_rollback_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		db_schema.h
+	}
+	sources { 
+		transaction_rollback.c 
+		db_schema.c
+	}
+}
+
+
+program savepoint_rollback_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		db_schema.h
+	}
+	sources { 
+		savepoint_rollback.c 
+		db_schema.c
+	}
+}

@@ -1,0 +1,51 @@
+action builddir-file-storage {
+	builddir = @builddir;
+	commands = "mkdir -p $(builddir)";
+}
+
+program atomic_file_storage_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		db_schema.h
+	}
+	sources { 
+		atomic_file_storage.c 
+		db_schema.c
+	}
+}
+
+
+program bulk_import_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		db_schema.h
+	}
+	sources { 
+		bulk_import.c
+		db_schema.c
+	}
+}
+
+
+program background_commit_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		db_schema.h
+	}
+	sources { 
+		background_commit.c 
+		db_schema.c
+	}
+}
