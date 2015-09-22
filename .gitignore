@@ -1,16 +1,12 @@
-GNUmakefile
 *.ittiadb
 *.ittiadb-log
 
-*.sln
 *.opensdf
 *.sdf
 *.suo
-*.vcxproj*
 **/Debug/*
 **/Release/*
 *.d
 *.o
 
-/tests/**/test.out
 /ittiadb/
