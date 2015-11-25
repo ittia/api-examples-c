@@ -1,6 +1,8 @@
 % ITTIA DB SQL Security Examples
 
-Embedded applications can secure an ITTIA DB SQL database file with AES encryption and restrict access from remote connections.
+Sensitive information must be protected both at rest and in motion with data encryption. When an embedded device is deployed in a public space, physical access to removable storage media can expose data if it is not encrypted. If a device shares data on a public WiFi network or with other devices on the Internet, unencrypted communications pose a similar risk.
+
+The Security examples show how an embedded application can secure an ITTIA DB SQL database file with AES encryption and restrict access from remote connections.
 
 # storage_encryption
 

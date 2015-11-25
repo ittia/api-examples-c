@@ -1,0 +1,2 @@
+srcdir memory_storage;
+import ../../src/memory_storage/memory_storage.bkl;

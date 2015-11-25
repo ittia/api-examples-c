@@ -1,0 +1,6 @@
+srcdir ittiadb;
+vs2010.generate-solution = false;
+vs2012.generate-solution = false;
+vs2013.generate-solution = false;
+import ../../../ittiadb/oslib/oslib.bkl;
+import ../../../ittiadb/ittia_db_sql.bkl;

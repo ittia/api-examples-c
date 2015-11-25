@@ -1,0 +1,2 @@
+srcdir file_storage;
+import ../../src/file_storage/file_storage.bkl;

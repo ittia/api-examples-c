@@ -1,0 +1,2 @@
+srcdir sql;
+import ../../src/sql/sql.bkl;

@@ -15,7 +15,7 @@ These examples, like ITTIA DB SQL itself, are cross-platform and can be compiled
 
  1. Install [ITTIA DB SQL evaluation kit][1] for 32-bit Windows.
  2. Copy `C:\Program Files (x86)\ITTIA DB SQL\*\msvc2010` into this folder and rename the folder to `ittiadb`.
- 3. Open `examples.sln` in Visual Studio.
+ 3. Open `build\vs*\api-examples-c.sln` in Visual Studio.
  4. Select the `Win32` platform.
  5. Build the solution.
 
@@ -23,7 +23,7 @@ These examples, like ITTIA DB SQL itself, are cross-platform and can be compiled
 
  1. Install [ITTIA DB SQL evaluation kit][1] for 64-bit Windows.
  2. Copy `C:\Program Files\ITTIA DB SQL\*\msvc2012_64` into this folder and rename the folder to `ittiadb`.
- 3. Open `examples.sln` in Visual Studio.
+ 3. Open `build\vs*\api-examples-c.sln` in Visual Studio.
  4. Select the `x64` platform.
  5. Build the solution.
 
