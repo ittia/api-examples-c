@@ -35,3 +35,13 @@ program memory_disk_hybrid_c
 		disk_db_schema.c
 	}
 }
+
+
+program memory_storage_embedded_server
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	sources { memory_storage_embedded_server.c }
+}
