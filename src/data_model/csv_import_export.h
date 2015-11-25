@@ -42,12 +42,12 @@ typedef struct {
 
 int csv_import( db_t hdb, const char * table_name, const char * buffer, size_t buffer_size, csv_import_options_t * import_options );
 
-typedef enum { 
-    SQL_SOURCE, TABLE_SOURCE 
+typedef enum {
+    SQL_SOURCE, TABLE_SOURCE
 } csv_source_mode_t;
 
 typedef struct {
-    csv_header_mode_t header_mode;    
+    csv_header_mode_t header_mode;
     csv_source_mode_t source_mode;
     char field_quote;
     char * line_prefix;

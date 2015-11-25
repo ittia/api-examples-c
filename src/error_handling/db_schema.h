@@ -26,7 +26,7 @@
 
 #include <ittia/db.h>
 
-/** 
+/**
     Table "readings" contains readings of several temperature sensors.
     Assume that readings is arrived from some source in packets. Every packet contains several readings from several sensors.
     Packet number is monotonically increasing integer.
@@ -47,31 +47,31 @@
 
 //------- Declarations to use while populating table
 
-/* Populate table using string-type only relative bounds fields. So declare appropriate structure. See 
+/* Populate table using string-type only relative bounds fields. So declare appropriate structure. See
    ittiadb/manuals/users-guide/api-c-database-access.html#relative-bound-fields
-*/
+ */
 typedef struct {
     int32_t   sensorid;
     int64_t   packetid;
     db_ansi_t   timepoint[20];
     db_ansi_t   temperature[10];
-    
+
 } storage_t;
 
 static const db_bind_t binds_def[] = {
-    { 
+    {
         SENSORID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_t, sensorid ),
         DB_BIND_SIZE( storage_t, sensorid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         PACKETID_FNO, DB_VARTYPE_SINT64,  DB_BIND_OFFSET( storage_t, packetid ),
         DB_BIND_SIZE( storage_t, packetid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         TIMEPOINT_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( storage_t, timepoint ),
         DB_BIND_SIZE( storage_t, timepoint ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         TEMPERATURE_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( storage_t, temperature ),
         DB_BIND_SIZE( storage_t, temperature ), -1, DB_BIND_RELATIVE
     },

@@ -74,9 +74,9 @@ static db_indexdef_t storage_indexes[] =
 };
 
 /* Database schemas. */
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
+    {
         DB_ALLOC_INITIALIZER(),
         DB_TABLETYPE_DEFAULT,
         STORAGE_TABLE,
@@ -88,7 +88,7 @@ static db_tabledef_t tables[] =
     },
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables
@@ -97,24 +97,24 @@ dbs_schema_def_t db_schema =
 typedef struct {
     uint32_t    id;
     char        en[MAX_TEXT_LEN + 1];
-    char        jp[MAX_TEXT_LEN + 1]; 
-    char        fr[MAX_TEXT_LEN + 1]; 
-    char        es[MAX_TEXT_LEN + 1]; 
-    char        ru[MAX_TEXT_LEN + 1]; 
+    char        jp[MAX_TEXT_LEN + 1];
+    char        fr[MAX_TEXT_LEN + 1];
+    char        es[MAX_TEXT_LEN + 1];
+    char        ru[MAX_TEXT_LEN + 1];
 } storage_t;
 
 static const db_bind_t binds_def[] = {
-    { ID_FNO, DB_VARTYPE_SINT32,   DB_BIND_OFFSET( storage_t, id ),  DB_BIND_SIZE( storage_t, id ), -1, DB_BIND_RELATIVE }, 
-    { EN_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, en ),  DB_BIND_SIZE( storage_t, en ), -1, DB_BIND_RELATIVE }, 
-    { JP_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, jp ),  DB_BIND_SIZE( storage_t, jp ), -1, DB_BIND_RELATIVE }, 
-    { FR_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, fr ),  DB_BIND_SIZE( storage_t, fr ), -1, DB_BIND_RELATIVE }, 
-    { ES_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, es ),  DB_BIND_SIZE( storage_t, es ), -1, DB_BIND_RELATIVE }, 
-    { RU_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, ru ),  DB_BIND_SIZE( storage_t, ru ), -1, DB_BIND_RELATIVE }, 
+    { ID_FNO, DB_VARTYPE_SINT32,   DB_BIND_OFFSET( storage_t, id ),  DB_BIND_SIZE( storage_t, id ), -1, DB_BIND_RELATIVE },
+    { EN_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, en ),  DB_BIND_SIZE( storage_t, en ), -1, DB_BIND_RELATIVE },
+    { JP_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, jp ),  DB_BIND_SIZE( storage_t, jp ), -1, DB_BIND_RELATIVE },
+    { FR_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, fr ),  DB_BIND_SIZE( storage_t, fr ), -1, DB_BIND_RELATIVE },
+    { ES_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, es ),  DB_BIND_SIZE( storage_t, es ), -1, DB_BIND_RELATIVE },
+    { RU_FNO, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, ru ),  DB_BIND_SIZE( storage_t, ru ), -1, DB_BIND_RELATIVE },
 };
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, ... )
 {
@@ -144,7 +144,7 @@ print_error_message( const char * message, ... )
     va_end( va );
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -152,8 +152,9 @@ create_database(char* database_name, dbs_schema_def_t *schema)
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, NULL);
 
-    if (hdb == NULL)
+    if (hdb == NULL) {
         return NULL;
+    }
 
     if (dbs_create_schema(hdb, schema) < 0) {
         db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
@@ -161,7 +162,7 @@ create_database(char* database_name, dbs_schema_def_t *schema)
         remove(database_name);
         return NULL;
     }
-  
+
     return hdb;
 }
 
@@ -171,7 +172,7 @@ static storage_t texts[] = {
     { 3, "Generic",     "汎用",             "Générique",        "Genérico",         "Общее"         },
     { 4, "Grayscale",   "グレースケール",   "Niveaux de gris",  "Escale de grises", "Оттенки серого"},
     { 5, "Light",       "薄い",             "Clair",            "Ligero",           "Светлый"       },
-    { 6, "Medium",      "紙質" ,            "Moyen",            "Media",            "Средний"       },
+    { 6, "Medium",      "紙質",            "Moyen",            "Media",            "Средний"       },
     { 7, "No",          "いいえ",           "Non",              "No",               "Нет"           },
     { 8, "No Content",  "中身がありません", "Aucun contenu",    "No hay contenido", "Нет контента"  },
 };
@@ -180,6 +181,7 @@ int
 load_data( db_t hdb )
 {
     db_result_t rc = DB_OK;
+    int i;
 
     db_row_t row;
     db_table_cursor_t p = {
@@ -196,9 +198,9 @@ load_data( db_t hdb )
         return EXIT_FAILURE;
     }
 
-    int i;
-    for( i = 0; i < DB_ARRAY_DIM(texts) && DB_OK == rc; ++i )
-        rc = db_insert(c, row, &texts[i], 0);        
+    for( i = 0; i < DB_ARRAY_DIM(texts) && DB_OK == rc; ++i ) {
+        rc = db_insert(c, row, &texts[i], 0);
+    }
 
     db_free_row( row );
     rc = DB_OK == rc ? db_commit_tx( hdb, 0 ) : rc;
@@ -211,7 +213,7 @@ load_data( db_t hdb )
     return DB_OK == rc ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int 
+int
 find_text( db_t hdb, const char * textid, const char * locale )
 {
     int rc = EXIT_FAILURE;
@@ -226,14 +228,18 @@ find_text( db_t hdb, const char * textid, const char * locale )
     char tr[MAX_TEXT_LEN + 1] = {0};
 
     int target_fno = EN_FNO;
-    if( 0 == strncmp( "jp", locale, 2 ) )
+    if( 0 == strncmp( "jp", locale, 2 ) ) {
         target_fno = JP_FNO;
-    else if( 0 == strncmp( "fr", locale, 2 ) )
+    }
+    else if( 0 == strncmp( "fr", locale, 2 ) ) {
         target_fno = FR_FNO;
-    else if( 0 == strncmp( "es", locale, 2 ) )
+    }
+    else if( 0 == strncmp( "es", locale, 2 ) ) {
         target_fno = ES_FNO;
-    else if( 0 == strncmp( "ru", locale, 2 ) )
+    }
+    else if( 0 == strncmp( "ru", locale, 2 ) ) {
         target_fno = RU_FNO;
+    }
 
     c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
 
@@ -243,22 +249,24 @@ find_text( db_t hdb, const char * textid, const char * locale )
         return EXIT_FAILURE;
     }
 
-    dbs_bind_addr( row, ID_FNO, DB_VARTYPE_ANSISTR, (char*)textid, strlen(textid), NULL );    
+    dbs_bind_addr( row, ID_FNO, DB_VARTYPE_ANSISTR, (char*)textid, strlen(textid), NULL );
     if( DB_OK == db_seek( c, DB_SEEK_FIRST_EQUAL, row, 0, 1 ) )
     {
         db_unbind_field( row, ID_FNO );
         dbs_bind_addr( row, EN_FNO, DB_VARTYPE_UTF8STR, en, MAX_TEXT_LEN, NULL );
-        if( target_fno != EN_FNO )
+        if( target_fno != EN_FNO ) {
             dbs_bind_addr( row, target_fno, DB_VARTYPE_UTF8STR, tr, MAX_TEXT_LEN, NULL );
+        }
         if( DB_OK == db_fetch( c, row, 0 ) ) {
             fprintf( stdout, "Message. Id: %s, en: [%s], %s: [%s]\n",
                      textid, en, locale, target_fno == EN_FNO ? "" : tr
-                );
+                     );
             rc = EXIT_SUCCESS;
         }
     }
-    if( rc != EXIT_SUCCESS ) 
+    if( rc != EXIT_SUCCESS ) {
         print_error_message( "Couldn't find translated text for messageid %s\n", textid );
+    }
 
     db_free_row( row );
     db_close_cursor( c );
@@ -267,10 +275,13 @@ find_text( db_t hdb, const char * textid, const char * locale )
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
+    int rc = EXIT_FAILURE;
+    db_t hdb;
+
     if( 2 < argc && 0 == strncmp( "-h", argv[1], 2 ) ) {
-        fprintf( stdout, 
+        fprintf( stdout,
                  "Usage:\n"
                  "    %s <messageid> <locale>\n"
                  "Parameters:\n"
@@ -278,22 +289,19 @@ example_main(int argc, char **argv)
                  "    locale    - One of en, jp, fr, es, ru. 'ru' by default\n"
                  "",
                  argv[0], DB_ARRAY_DIM(texts)
-            );
+                 );
     }
 
-    db_t hdb = create_database( EXAMPLE_DATABASE, &db_schema );
+    hdb = create_database( EXAMPLE_DATABASE, &db_schema );
 
-    int rc = EXIT_FAILURE;
-
-    if( hdb != NULL ) {        
+    if( hdb != NULL ) {
         rc = load_data( hdb );
-        char * id = 0;
-        if( 0 == rc )
+        if( 0 == rc ) {
             rc = find_text( hdb, argc > 1 ? argv[1] : "1", argc > 2 ? argv[2] : "ru" );
+        }
     }
 
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
     return rc;
 }
-

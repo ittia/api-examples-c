@@ -39,16 +39,16 @@ thread_join( os_thread_t * h )
     return os_thread_join( h );
 }
 /*
-struct mutex_t {
+   struct mutex_t {
     os_mutex_t * mutex;
-};
-*/
+   };
+ */
 int
 mutex_init(mutex_t * mutex)
 {
     mutex->mutex = malloc( sizeof(os_mutex_t) );
     return os_mutex_init( (os_mutex_t *)mutex->mutex );
-} 
+}
 
 int
 mutex_destroy(mutex_t * mutex)

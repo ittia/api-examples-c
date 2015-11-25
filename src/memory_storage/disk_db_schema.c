@@ -52,42 +52,40 @@ static db_indexdef_t disk_hosts_indexes[] =
       disk_hosts_by_age_idx_fields },              /* fields */
 };
 
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_KHEAP,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_KHEAP,
         DISK_HOSTS_TABLE,
         DB_ARRAY_DIM(disk_hosts_fields),
         disk_hosts_fields,
         DB_ARRAY_DIM(disk_hosts_indexes),   // Indexes array size
-                     disk_hosts_indexes,    // Indexes array
+        disk_hosts_indexes,                 // Indexes array
         0, NULL,
     },
     /// Just the same table but in memory
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_MEMORY,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_MEMORY,
         MEM_HOSTS_TABLE,
         DB_ARRAY_DIM(disk_hosts_fields),
         disk_hosts_fields,
         DB_ARRAY_DIM(disk_hosts_indexes),   // Indexes array size
-                     disk_hosts_indexes,    // Indexes array
+        disk_hosts_indexes,                 // Indexes array
         0, NULL,
     },
 };
 
-static db_seqdef_t sequences[] = 
+static db_seqdef_t sequences[] =
 {
     { AGE_SEQUENCE, {{ 1, 0}} },
 };
 
-dbs_schema_def_t disk_db_schema = 
+dbs_schema_def_t disk_db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables,
     DB_ARRAY_DIM(sequences),
     sequences
 };
-
-

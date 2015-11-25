@@ -38,8 +38,8 @@
 #define EXAMPLE_DATABASE "savepoint_rollback.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -70,11 +70,11 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, storage_cfg);
 
@@ -98,7 +98,16 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
 int
 do_transaction_with_savepoint( db_t hdb )
 {
-    static storage_t readings[ 9 ] = {       
+    db_result_t rc = DB_OK;
+    int i;
+    int64_t current_packet = 0;
+    int is_wrong_packet = 0;
+    int in_tx = 0;
+    int good_readings = 0;
+    int bad_readings = 0;
+    db_savepoint_t sp1 = NULL;
+
+    static storage_t readings[ 9 ] = {
         // Good&Bad readings
         { 1, 2, "2015-07-29 01:05:01", "1.9" },
         { 2, 3, "2015-07-29 01:01:01", "11.1" },
@@ -112,44 +121,35 @@ do_transaction_with_savepoint( db_t hdb )
 
     };
     db_row_t row;
-    
-    row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
-    if( NULL == row ) {
-        print_error_message( "Couldn't pupulate 'storage' table", NULL );
-        return EXIT_FAILURE;
-    }
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
     };
     db_cursor_t c;
 
-    c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
+    row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
+    if( NULL == row ) {
+        print_error_message( "Couldn't pupulate 'storage' table", NULL );
+        return EXIT_FAILURE;
+    }
 
-    db_result_t rc = DB_OK;
-    int i;
-    int64_t current_packet = 0;
-    int is_wrong_packet = 0;
-    int in_tx = 0;
-    int good_readings = 0;
-    int bad_readings = 0;
-    db_savepoint_t sp1 = NULL;
+    c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
 
     db_begin_tx( hdb, 0 );
 
     for( i = 0; i < DB_ARRAY_DIM(readings); ++i ) {
         // Set savepoint in "override" mode
         sp1 = db_set_savepoint( hdb, "sp1", DB_SAVEPOINT_OVERRIDE );
-        if( sp1 ) {            
+        if( sp1 ) {
             // Try to insert reading
             if( DB_OK == db_insert(c, row, &readings[i], 0) ) {
                 good_readings++;
                 continue;
-            } else if( DB_OK == db_rollback_savepoint( hdb, sp1) ) 
+            } else if( DB_OK == db_rollback_savepoint( hdb, sp1) )
             {   // If insert failed, do rollback to sp1, skip reading & try with next one
                 bad_readings++;
                 clear_db_error();
-                continue;                
+                continue;
             }
         }
         print_error_message( "Can't insert reading", c );
@@ -158,7 +158,7 @@ do_transaction_with_savepoint( db_t hdb )
         fprintf(stdout, "Count of readings (overall/good/bad): (%d/%d/%d). Overall - good - bad: %d\n",
                 DB_ARRAY_DIM( readings ), good_readings, bad_readings,
                 DB_ARRAY_DIM( readings ) - good_readings - bad_readings
-            );
+                );
     }
 
     db_free_row( row );
@@ -169,20 +169,20 @@ do_transaction_with_savepoint( db_t hdb )
 
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     db_t hdb;                   // db to create and insert rows
-    
+
     hdb = create_database( EXAMPLE_DATABASE, &db_schema, NULL );
-    if (!hdb)
+    if (!hdb) {
         goto exit;
+    }
 
     // Start transactions with savepoints
     rc = do_transaction_with_savepoint( hdb );
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
-  exit:
+exit:
     return rc;
 }
-

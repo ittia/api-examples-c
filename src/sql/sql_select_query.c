@@ -38,8 +38,8 @@
 #define EXAMPLE_DATABASE "sql_select_query.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( db_cursor_t cursor, const char * message, ... )
 {
@@ -78,8 +78,8 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 }
 
 /**
-* Execute an SQL statement, checking for errors.
-*/
+ * Execute an SQL statement, checking for errors.
+ */
 static int
 execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t parameters )
 {
@@ -119,18 +119,18 @@ static int
 ins_data( db_t hdb )
 {
     if ( 0 == execute_command( hdb,
-        "create table storage ("
-        "  id sint32 not null primary key,"
-        "  data sint32"
-        ")",
-        NULL, NULL
-        ) &&
-        0 == execute_command( hdb,
-        "insert into storage (id, data)"
-        "  select N, 100 - N from $nat(100)",
-        NULL, NULL
-        )
-        )
+                               "create table storage ("
+                               "  id sint32 not null primary key,"
+                               "  data sint32"
+                               ")",
+                               NULL, NULL
+                               ) &&
+         0 == execute_command( hdb,
+                               "insert into storage (id, data)"
+                               "  select N, 100 - N from $nat(100)",
+                               NULL, NULL
+                               )
+         )
     {
         return EXIT_SUCCESS;
     }
@@ -142,7 +142,6 @@ static void
 process_record( int32_t id, int32_t data )
 {
     /* Stub function: process a record from the database. */
-    return;
 }
 
 static int
@@ -178,18 +177,18 @@ select_query( db_t hdb )
 
     /* Select only the first 30 rows in the table. */
     if ( 0 == execute_command( hdb,
-        "select id, data"
-        "  from storage"
-        "  order by id"
-        "  offset 0 rows"
-        "  fetch first 30 rows only",
-        &sql_cursor,
-        NULL ) )
+                               "select id, data"
+                               "  from storage"
+                               "  order by id"
+                               "  offset 0 rows"
+                               "  fetch first 30 rows only",
+                               &sql_cursor,
+                               NULL ) )
     {
         for ( row = 0, db_seek_first( sql_cursor );
-            !db_eof( sql_cursor );
-            db_seek_next( sql_cursor ), ++row
-            )
+              !db_eof( sql_cursor );
+              db_seek_next( sql_cursor ), ++row
+              )
         {
             db_fetch( sql_cursor, r, NULL );
             process_record( id, data );
@@ -203,7 +202,7 @@ select_query( db_t hdb )
 
     rc = EXIT_SUCCESS;
 
-  select_query_exit:
+select_query_exit:
 
     db_free_row( r );
     db_close_cursor( sql_cursor );
@@ -212,7 +211,7 @@ select_query( db_t hdb )
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
 
@@ -234,4 +233,3 @@ example_main(int argc, char **argv)
 
     return rc;
 }
-

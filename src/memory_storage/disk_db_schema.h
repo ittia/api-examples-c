@@ -33,9 +33,9 @@
 
 // Hosts table fields
 #define HOSTNAME_FNO    0
-#define HOSTIP_FNO      1    
+#define HOSTIP_FNO      1
 #define REQCOUNT_FNO    2
-#define AGE_FNO         3   
+#define AGE_FNO         3
 
 #define HOSTS_PKEY_INDEX_NAME       "hosts_pkey"
 #define HOSTS_BY_AGE_INDEX_NAME     "hosts_age_idx"
@@ -51,19 +51,19 @@ typedef struct {
 } cache_db_row_t;
 
 static const db_bind_t host_binds_def[] = {
-    { 
+    {
         HOSTNAME_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( cache_db_row_t, hostname ),
         DB_BIND_SIZE( cache_db_row_t, hostname ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         HOSTIP_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( cache_db_row_t, hostip ),
         DB_BIND_SIZE( cache_db_row_t, hostip ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         REQCOUNT_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( cache_db_row_t, reqcount ),
         DB_BIND_SIZE( cache_db_row_t, reqcount ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         AGE_FNO, DB_VARTYPE_SINT64,  DB_BIND_OFFSET( cache_db_row_t, age ),
         DB_BIND_SIZE( cache_db_row_t, age ), -1, DB_BIND_RELATIVE
     },

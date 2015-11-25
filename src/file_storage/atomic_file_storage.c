@@ -39,8 +39,8 @@
 #define EXAMPLE_DATABASE "atomic_file_storage.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -72,9 +72,10 @@ print_error_message( const char * message, db_cursor_t cursor )
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
+    int i;
     db_t hdb;
     db_file_storage_config_t storage_cfg;
     static storage_t rows2ins[] = {
@@ -84,7 +85,7 @@ example_main(int argc, char **argv)
         { "ansi_str4",    4,  4.231, "utf8" },
         { "ansi_str5",    5,  5.231, "utf8" },
     };
-    db_row_t row;   
+    db_row_t row;
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
@@ -124,24 +125,24 @@ example_main(int argc, char **argv)
         print_error_message( "Couldn't re-open database with default params\n", NULL );
         goto exit;
     }
-    
+
     // Check the page size of opened db is equal to used on creation
-    db_storage_config_t cfg;
-    db_rc = db_get_storage_config( hdb, &cfg );
-    if( DB_OK != db_rc ) {
-        print_error_message( "Couldn't get open database's storage config\n", NULL );
-        goto exit;
+    {
+        db_storage_config_t cfg;
+        db_rc = db_get_storage_config( hdb, &cfg );
+        if( DB_OK != db_rc ) {
+            print_error_message( "Couldn't get open database's storage config\n", NULL );
+            goto exit;
+        }
+
+        if( cfg.u.file_storage.page_size != DB_DEF_PAGE_SIZE * 2 ) {
+            fprintf( stderr, "Warning! Unexpected page size %d detected in existing database. Page size %d expected.\n",
+                     cfg.u.file_storage.page_size, DB_DEF_PAGE_SIZE * 2
+                     );
+        }
     }
 
-    // TODO
-    if( cfg.u.file_storage.page_size != DB_DEF_PAGE_SIZE * 2 ) {
-        ///@ Att! Some issue on my PC (Linux 32bit)? Execution gets here.
-        fprintf( stderr, "Warn! Page size of DB after reopen with default params is unexpected: %d, but %d expected\n", 
-                 cfg.u.file_storage.page_size, DB_DEF_PAGE_SIZE * 2 
-            );
-        //goto exit;
-    }
-    // Allocate row 
+    // Allocate row
     row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
     if( NULL == row ) {
         print_error_message( "Couldn't allocate db_row_t\n", NULL );
@@ -153,7 +154,6 @@ example_main(int argc, char **argv)
 
     db_rc = db_begin_tx( hdb, 0 );
     /* Insert loop. Commit after inserting 3 records; don't commit the last 2 rows. */
-    int i;
     for( i = 0; i < DB_ARRAY_DIM(rows2ins) && DB_OK == db_rc; ++i ) {
         db_rc = db_insert(c, row, &rows2ins[i], 0);
         if( i == 2 ) {
@@ -179,33 +179,39 @@ example_main(int argc, char **argv)
     db_rc = db_seek_first(c);
 
     // Scan table and check pkey values
-    int counter = 0;
-    storage_t row_data;
-    for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
     {
-        db_rc = db_fetch( c, row, &row_data );
-        if( row_data.f1 != ++counter )
-            break;
+        int counter = 0;
+        storage_t row_data;
+        for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
+        {
+            db_rc = db_fetch( c, row, &row_data );
+            if( row_data.f1 != ++counter ) {
+                break;
+            }
+        }
+        if( DB_OK != db_rc ) {
+            print_error_message( "Error to scan table after db reopening\n", c );
+        }
+        else if( row_data.f1 != counter ) {
+            fprintf( stderr, "Pkey field values sequence violation detected: (%" PRId64 ", %d)\n",
+                     row_data.f1, counter);
+        }
+        else if( 3 < counter ) {
+            fprintf( stderr, "Unexpected records count in table after reopen: %d, but %d expected.\n", 3, counter );
+        }
+        else if( 3 > counter ) {
+            fprintf( stderr, "There is lesser records in table then expected: %d, but expected: %d.\n", counter, 3 );
+        }
+        else {
+            rc = EXIT_SUCCESS;
+        }
     }
-    if( DB_OK != db_rc ) 
-        print_error_message( "Error to scan table after db reopening\n", c );        
-    else if( row_data.f1 != counter )
-        fprintf( stderr, "Pkey field values sequence violation detected: (%" PRId64 ", %d)\n", 
-                 row_data.f1, counter 
-            );
-    else if( 3 < counter )
-        fprintf( stderr, "Unexpected records count in table after reopen: %d, but %d expected.\n", 3, counter );
-    else if( 3 > counter )
-        fprintf( stderr, "There is lesser records in table then expected: %d, but expected: %d.\n", counter, 3 );
-    else 
-        rc = EXIT_SUCCESS;
 
     db_close_cursor( c );
     db_free_row( row );
     // close source db
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
-  exit:
+exit:
     return rc;
 }
-

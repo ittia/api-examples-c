@@ -78,7 +78,7 @@ static db_tabledef_t table_t = {
     0, NULL,
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     1,
     &table_t
@@ -92,14 +92,14 @@ typedef struct {
 } storage_t;
 
 static const db_bind_t t_binds[] = {
-    { T_ID, DB_VARTYPE_UINT32,  DB_BIND_OFFSET( storage_t, id ),  DB_BIND_SIZE( storage_t, id ), -1, DB_BIND_RELATIVE }, 
-    { T_N,  DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_t, n ),   DB_BIND_SIZE( storage_t, n ),  -1, DB_BIND_RELATIVE }, 
-    { T_S,  DB_VARTYPE_UTF8STR, DB_BIND_OFFSET( storage_t, s ),   DB_BIND_SIZE( storage_t, s ),  DB_BIND_OFFSET( storage_t, s_isnull ), DB_BIND_RELATIVE }, 
+    { T_ID, DB_VARTYPE_UINT32,  DB_BIND_OFFSET( storage_t, id ),  DB_BIND_SIZE( storage_t, id ), -1, DB_BIND_RELATIVE },
+    { T_N,  DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_t, n ),   DB_BIND_SIZE( storage_t, n ),  -1, DB_BIND_RELATIVE },
+    { T_S,  DB_VARTYPE_UTF8STR, DB_BIND_OFFSET( storage_t, s ),   DB_BIND_SIZE( storage_t, s ),  DB_BIND_OFFSET( storage_t, s_isnull ), DB_BIND_RELATIVE },
 };
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( db_cursor_t cursor, const char * message, ... )
 {
@@ -140,11 +140,11 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 /**
  * Helper function to create DB
  */
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, NULL);
 
@@ -177,7 +177,7 @@ static mutex_t mutex;
 
 /// Backup thread perform this:
 void changes_proc( change_args_t * data )
-{   
+{
     db_t hdb;
     db_cursor_t t_cursor;
     db_row_t t_row;
@@ -232,17 +232,18 @@ void changes_proc( change_args_t * data )
     }
 
     data->rc = DB_OK == dbrc ? EXIT_SUCCESS : EXIT_FAILURE;
-    if( DB_OK != dbrc )
+    if( DB_OK != dbrc ) {
         print_error_message( NULL, "Data changing error" );
+    }
 
     // Report to parent thread the backup complete
     mutex_lock( &mutex );
     changes_complete = 1;
-    mutex_unlock( &mutex );    
+    mutex_unlock( &mutex );
 }
 
 void get_row_data( db_row_t row, storage_t * data)
-{   
+{
     db_get_field_data( row, T_ID, DB_VARTYPE_UINT32, &data->id, sizeof( uint32_t ) );
     db_get_field_data( row, T_N, DB_VARTYPE_SINT32, &data->n,   sizeof( int32_t ) );
     db_get_field_data( row, T_S, DB_VARTYPE_UTF8STR, &data->s,  MAX_S_LEN );
@@ -255,6 +256,8 @@ watch_notifications()
     db_result_t rc;
     db_row_t wrow, waux;
     db_event_t evt;
+    time_t start_time;
+    int complete = 0;
 
     storage_t r0;   //< orig_row
     storage_t r1;   //< changed_row
@@ -277,13 +280,12 @@ watch_notifications()
     /* Watch the contact table for inserts and updates. Include a copy of modified */
     /* fields in each event, including former values in case of an update. */
     rc = db_watch_table(hdb, "T",
-                   DB_WATCH_ROW_INSERT | DB_WATCH_ROW_UPDATE | DB_WATCH_ROW_DELETE
-                   | DB_WATCH_ALL_FIELDS
-                   | DB_WATCH_FORMER_VALUES,
-                   WATCH1);
+                        DB_WATCH_ROW_INSERT | DB_WATCH_ROW_UPDATE | DB_WATCH_ROW_DELETE
+                        | DB_WATCH_ALL_FIELDS
+                        | DB_WATCH_FORMER_VALUES,
+                        WATCH1);
 
-    time_t start_time = time( 0 );
-    int complete = 0;
+    start_time = time( 0 );
 
     do {
         rc = db_wait_ex(hdb, WAIT_MILLISEC(100), &evt, wrow, waux);
@@ -295,33 +297,36 @@ watch_notifications()
                 mutex_lock( &mutex );
                 complete = changes_complete;
                 mutex_unlock( &mutex );
-            } else 
+            }
+            else {
                 print_error_message( NULL, "Error waiting for event.");
+            }
         }
         else if (evt.event_tag == DB_WATCH_ROW_UPDATE && evt.u.row_update.utid == WATCH1) {
             get_row_data( wrow, &r1 );
             get_row_data( waux, &r0 );
             fprintf( stdout, "Upd from: (%d, %d, %s) to (%d, %d, %s)\n",
                      r0.id, r0.n, r0.s, r1.id, r1.n, r1.s
-                );
+                     );
             upd_cnt++;
         } else if (evt.event_tag == DB_WATCH_ROW_INSERT && evt.u.row_insert.utid == WATCH1) {
             get_row_data( wrow, &r1 );
             fprintf( stdout, "Ins: (%d, %d, %s)\n",
                      r1.id, r1.n, r1.s
-                );
+                     );
             ins_cnt++;
         }
         else if (evt.event_tag == DB_WATCH_ROW_DELETE && evt.u.row_delete.utid == WATCH1) {
             get_row_data( wrow, &r0 );
             fprintf( stdout, "Del: (%d, %d, %s)\n",
                      r0.id, r0.n, r0.s
-                );
+                     );
             del_cnt++;
         }
 
-        if( 5 < time( 0 ) - start_time )
+        if( 5 < time( 0 ) - start_time ) {
             complete = 1;
+        }
 
     } while ( !complete );
 
@@ -334,15 +339,16 @@ watch_notifications()
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     db_t hdb;      // File-storage db
 
     // Create database
     hdb = create_database( DB_FILENAME, &db_schema );
-    if( !hdb )
+    if( !hdb ) {
         goto exit;
+    }
 
     if( mutex_init( &mutex ) ) {
         fprintf( stderr, "Couldn't create mutex\n" );
@@ -350,24 +356,24 @@ example_main(int argc, char **argv)
     }
 
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);  // A storage cannot be mounted while open.
-    if( DB_OK == db_mount_storage( DB_FILENAME, DB_ALIAS, NULL ) ) {        
+    if( DB_OK == db_mount_storage( DB_FILENAME, DB_ALIAS, NULL ) ) {
         /*
          *  Start DbServer
          */
         db_server_config_t srv_config;
-        db_server_config_init ( &srv_config );
+        db_server_config_init( &srv_config );
 
         if( DB_OK == db_server_start( &srv_config ) ) {
             os_thread_t *tid;           // Changes thread
             change_args_t change_args = { DB_ALIAS }; // ... and its params
-            
+
             fprintf( stdout, "Server started. DB [%s] mounted with alias [%s]\n", DB_FILENAME, DB_ALIAS );
             // Spawn child, data-changing thread
             rc = DB_NOERROR == thread_spawn( (thread_proc_t)changes_proc, &change_args, THREAD_JOINABLE, &tid ) ? EXIT_SUCCESS : EXIT_FAILURE;
-            
+
             // Main thread goes to watching
             rc = rc || watch_notifications(); //< Replace this with some real exit condition
-            db_server_stop( 0 );            
+            db_server_stop( 0 );
 
             // Clean data-changing thread
             thread_join( tid );
@@ -377,10 +383,11 @@ example_main(int argc, char **argv)
 
     mutex_destroy( &mutex );
 
-  exit:
+exit:
 
-    if( hdb )
+    if( hdb ) {
         db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);  // A storage cannot be mounted while open.
 
+    }
     return rc;
 }

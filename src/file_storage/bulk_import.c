@@ -38,8 +38,8 @@
 #define EXAMPLE_DATABASE "bulk_import.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -70,11 +70,11 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, storage_cfg);
 
@@ -98,7 +98,8 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
 int
 import_data( db_t hdb )
 {
-    db_row_t row;   
+    int i;
+    db_row_t row;
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
@@ -119,7 +120,6 @@ import_data( db_t hdb )
 
     db_rc = DB_OK;
     // Insertion loop. Do commit after 3 records inserted only. Don't commit last 2 rows
-    int i;
     db_rc = db_begin_tx( hdb, 0 );
 
     for( i = 0; i < 100 && DB_OK == db_rc; ++i ) {
@@ -130,41 +130,42 @@ import_data( db_t hdb )
 
     db_rc = ( DB_OK == db_rc ) ? db_commit_tx( hdb, 0 ) : db_rc;
 
-    if( DB_OK != db_rc )
+    if( DB_OK != db_rc ) {
         print_error_message( "Error inserting or commiting\n", c );
-        
+    }
+
     db_close_cursor( c );
     db_free_row( row );
-    
+
     return DB_OK == db_rc ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     db_t hdb;
     db_file_storage_config_t storage_cfg;
-    
+
     db_file_storage_config_init(&storage_cfg);
 
     /* Create a new database with logging disabled. */
     storage_cfg.file_mode &= ~DB_NOLOGGING;
     hdb = create_database( EXAMPLE_DATABASE, &db_schema, &storage_cfg );
-    if ( hdb == NULL )
+    if ( hdb == NULL ) {
         goto exit;
+    }
 
     // Get the data somewhere and do import
     rc = import_data( hdb );
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
-    
+
     if( rc ) {
         // Remove db if something gone wrong
-        remove(EXAMPLE_DATABASE);        
+        remove(EXAMPLE_DATABASE);
     }
 
-  exit:
+exit:
     return rc;
 
 }
-

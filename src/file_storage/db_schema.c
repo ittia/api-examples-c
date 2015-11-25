@@ -34,7 +34,7 @@ static db_fielddef_t storage_fields[] =
 };
 
 // PKey fields
-static db_indexfield_t pkey_fields[] = 
+static db_indexfield_t pkey_fields[] =
 {
     { 1 }
 };
@@ -42,29 +42,29 @@ static db_indexfield_t pkey_fields[] =
 db_indexdef_t indexes[] =
 {
     { DB_ALLOC_INITIALIZER(),       /* db_alloc */
-        DB_INDEXTYPE_DEFAULT,       /* index_type */
-        PKEY_INDEX_NAME,            /* index_name */
-        DB_PRIMARY_INDEX,           /* index_mode */
-        DB_ARRAY_DIM(pkey_fields),  /* nfields */
-        pkey_fields },              /* fields */
+      DB_INDEXTYPE_DEFAULT,         /* index_type */
+      PKEY_INDEX_NAME,              /* index_name */
+      DB_PRIMARY_INDEX,             /* index_mode */
+      DB_ARRAY_DIM(pkey_fields),    /* nfields */
+      pkey_fields },                /* fields */
 };
 
 /* Database schemas. */
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_DEFAULT,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_DEFAULT,
         STORAGE_TABLE,
         DB_ARRAY_DIM(storage_fields),
         storage_fields,
         DB_ARRAY_DIM(indexes),   // Indexes array size
-                     indexes,    // Indexes array
+        indexes,                 // Indexes array
         0, NULL,
     },
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables

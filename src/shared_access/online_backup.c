@@ -54,7 +54,7 @@ static db_fielddef_t storage_fields[] =
 };
 
 // v1 PKey fields
-static db_indexfield_t pkey_fields[] = 
+static db_indexfield_t pkey_fields[] =
 {
     { 1 }
 };
@@ -62,29 +62,29 @@ static db_indexfield_t pkey_fields[] =
 db_indexdef_t indexes[] =
 {
     { DB_ALLOC_INITIALIZER(),       /* db_alloc */
-        DB_INDEXTYPE_DEFAULT,       /* index_type */
-        PKEY_INDEX_NAME,            /* index_name */
-        DB_PRIMARY_INDEX,           /* index_mode */
-        DB_ARRAY_DIM(pkey_fields),  /* nfields */
-        pkey_fields },              /* fields */
+      DB_INDEXTYPE_DEFAULT,         /* index_type */
+      PKEY_INDEX_NAME,              /* index_name */
+      DB_PRIMARY_INDEX,             /* index_mode */
+      DB_ARRAY_DIM(pkey_fields),    /* nfields */
+      pkey_fields },                /* fields */
 };
 
 /* Database schemas. */
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_DEFAULT,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_DEFAULT,
         STORAGE_TABLE,
         DB_ARRAY_DIM(storage_fields),
         storage_fields,
         DB_ARRAY_DIM(indexes),   // Indexes array size
-                     indexes,    // Indexes array
+        indexes,                 // Indexes array
         0, NULL,
     },
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables
@@ -92,26 +92,26 @@ dbs_schema_def_t db_schema =
 
 //------- Declarations to use while populating table
 
-/* Populate table using relative bounds fields. So declare appropriate structure. See 
+/* Populate table using relative bounds fields. So declare appropriate structure. See
    ittiadb/manuals/users-guide/api-c-database-access.html#relative-bound-fields
-*/
+ */
 typedef struct {
     db_ansi_t   f0[MAX_STRING_FIELD + 1];   /* Extra char for null termination. */
     uint64_t    f1;
     double      f2;
-    char        f3[MAX_STRING_FIELD*2 + 1]; 
+    char        f3[MAX_STRING_FIELD*2 + 1];
 } storage_t;
 
 static const db_bind_t binds_def[] = {
     { 0, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( storage_t, f0 ),  DB_BIND_SIZE( storage_t, f0 ), -1, DB_BIND_RELATIVE },
-    { 1, DB_VARTYPE_SINT64,   DB_BIND_OFFSET( storage_t, f1 ),  DB_BIND_SIZE( storage_t, f1 ), -1, DB_BIND_RELATIVE }, 
-    { 2, DB_VARTYPE_FLOAT64,  DB_BIND_OFFSET( storage_t, f2 ),  DB_BIND_SIZE( storage_t, f2 ), -1, DB_BIND_RELATIVE }, 
-    { 3, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, f3 ),  DB_BIND_SIZE( storage_t, f3 ), -1, DB_BIND_RELATIVE }, 
+    { 1, DB_VARTYPE_SINT64,   DB_BIND_OFFSET( storage_t, f1 ),  DB_BIND_SIZE( storage_t, f1 ), -1, DB_BIND_RELATIVE },
+    { 2, DB_VARTYPE_FLOAT64,  DB_BIND_OFFSET( storage_t, f2 ),  DB_BIND_SIZE( storage_t, f2 ), -1, DB_BIND_RELATIVE },
+    { 3, DB_VARTYPE_UTF8STR,  DB_BIND_OFFSET( storage_t, f3 ),  DB_BIND_SIZE( storage_t, f3 ), -1, DB_BIND_RELATIVE },
 };
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -142,11 +142,11 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, NULL);
 
@@ -179,8 +179,8 @@ static mutex_t mutex;
 
 /// Backup thread perform this:
 void backup_proc( backup_args_t * data )
-{   
-    db_backup_t backup_cfg;   
+{
+    db_backup_t backup_cfg;
     db_t hdb;
 
     // Just open DB to backup ...
@@ -194,12 +194,14 @@ void backup_proc( backup_args_t * data )
         backup_cfg.cipher_type = DB_CIPHER_NONE;
 
         // Launch backup execution
-        if( DB_OK != db_backup_ex( hdb, data->dbbname, &backup_cfg ) )
+        if( DB_OK != db_backup_ex( hdb, data->dbbname, &backup_cfg ) ) {
             print_error_message( "Couldn't backup DB", NULL );
-        else
+        }
+        else {
             data->rc = EXIT_SUCCESS;
+        }
     } else {
-        print_error_message( "Couldn't open DB", NULL );        
+        print_error_message( "Couldn't open DB", NULL );
     }
     // Report to parent thread the backup complete
     mutex_lock( &mutex );
@@ -207,7 +209,7 @@ void backup_proc( backup_args_t * data )
     mutex_unlock( &mutex );
 }
 
-/// Check backed up DB. - Try to open & check table 
+/// Check backed up DB. - Try to open & check table
 int check_backed_up_data(char *dbname)
 {
     int rc = EXIT_FAILURE;
@@ -219,14 +221,14 @@ int check_backed_up_data(char *dbname)
     // Use absolute bound fields schema
     int64_t f1_data;    //< Fetch f1 field here
     const db_bind_t row_def =
-        {
-            1,                            /* field_no   */
-            DB_VARTYPE_SINT64,            /* data_type  */
-            DB_BIND_ADDRESS(&f1_data),    /* data_ptr   */
-            sizeof(f1_data),              /* data_size  */
-            DB_BIND_ADDRESS(NULL),        /* data_ind   */
-            DB_BIND_ABSOLUTE,             /* data_flags */
-        };
+    {
+        1,                                /* field_no   */
+        DB_VARTYPE_SINT64,                /* data_type  */
+        DB_BIND_ADDRESS(&f1_data),        /* data_ptr   */
+        sizeof(f1_data),                  /* data_size  */
+        DB_BIND_ADDRESS(NULL),            /* data_ind   */
+        DB_BIND_ABSOLUTE,                 /* data_flags */
+    };
 
     db_cursor_t c;  // Cursor to scan table to check
     // Cursor parameters
@@ -247,25 +249,31 @@ int check_backed_up_data(char *dbname)
     db_rc = db_seek_first(c);
 
     // Scan table and check that pkey values are monotonically increase
-    int counter = 0;
-    for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
     {
-        db_rc = db_fetch(c, row, NULL);
-        if( f1_data != ++counter )
-            break;
-    }
-    if( DB_OK != db_rc ) 
-        print_error_message( "Error to scan table of backup db\n", c );        
-    else if( f1_data != counter )
-        fprintf( stderr, "Pkey field values sequence violation detected in backup db: (%" PRId64 ", %d)\n", 
-                 f1_data, counter 
-            );
-    else if( COMMITED_RECORDS_BEFORE_BACKUP > counter )
-        fprintf( stderr, "Not all records which should be in backup are really there. At least %d expected. But only %d is in.\n",
-                 COMMITED_RECORDS_BEFORE_BACKUP, counter );
-    else {
-        fprintf( stdout, "%d records backed up\n", counter );
-        rc = EXIT_SUCCESS;
+        int counter = 0;
+        for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
+        {
+            db_rc = db_fetch(c, row, NULL);
+            if( f1_data != ++counter ) {
+                break;
+            }
+        }
+        if( DB_OK != db_rc ) {
+            print_error_message( "Error to scan table of backup db\n", c );
+        }
+        else if( f1_data != counter ) {
+            fprintf( stderr, "Pkey field values sequence violation detected in backup db: (%" PRId64 ", %d)\n",
+                     f1_data, counter
+                     );
+        }
+        else if( COMMITED_RECORDS_BEFORE_BACKUP > counter ) {
+            fprintf( stderr, "Not all records which should be in backup are really there. At least %d expected. But only %d is in.\n",
+                     COMMITED_RECORDS_BEFORE_BACKUP, counter );
+        }
+        else {
+            fprintf( stdout, "%d records backed up\n", counter );
+            rc = EXIT_SUCCESS;
+        }
     }
 
     db_close_cursor( c );
@@ -276,14 +284,14 @@ int check_backed_up_data(char *dbname)
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     backup_args_t backup_args = { 0, 0, 0, 0 };
     db_t hdb;                   // db to create and insert rows
 
     static storage_t row2ins = { "ansi_str",  0,  1.231, "utf8" };
-    db_row_t row;   
+    db_row_t row;
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
@@ -306,10 +314,11 @@ example_main(int argc, char **argv)
     // Create database
     hdb = create_database( backup_args.dbname, &db_schema );
 
-    if (!hdb)
+    if (!hdb) {
         goto exit;
+    }
 
-    // Allocate row 
+    // Allocate row
     row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
     if( NULL == row ) {
         print_error_message( "Couldn't allocate db_row_t\n", NULL );
@@ -328,7 +337,7 @@ example_main(int argc, char **argv)
             db_rc = db_commit_tx( hdb, 0 );
             db_rc = db_begin_tx( hdb, 0 );
         }
-        if( COMMITED_RECORDS_BEFORE_BACKUP == row2ins.f1 ) { 
+        if( COMMITED_RECORDS_BEFORE_BACKUP == row2ins.f1 ) {
             // Start backup thread
             rc = thread_spawn( (thread_proc_t)backup_proc, &backup_args, THREAD_JOINABLE, &tid );
             if( rc ) {
@@ -344,12 +353,14 @@ example_main(int argc, char **argv)
 
     fprintf( stdout, "%" PRId64 " records inserted in source db\n", ++row2ins.f1 );   // Increment pkey value to put it in 'table.int64_field' field
 
-    if( DB_OK != db_rc )
+    if( DB_OK != db_rc ) {
         print_error_message( "Couldn't insert db row\n", c );
+    }
     else {
         db_rc = DB_OK == db_rc ? db_commit_tx( hdb, 0 ) : db_rc;
-        if( DB_OK != db_rc )
+        if( DB_OK != db_rc ) {
             print_error_message( "Couldn't do final commit\n", c );
+        }
     }
     db_close_cursor( c );
     db_free_row( row );
@@ -363,7 +374,6 @@ example_main(int argc, char **argv)
     rc = backup_args.rc || ( db_rc != DB_OK );
     rc = rc ? rc : check_backed_up_data( backup_args.dbbname );
 
-  exit:
+exit:
     return rc;
 }
-

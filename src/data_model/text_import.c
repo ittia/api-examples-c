@@ -41,8 +41,8 @@
 extern dbs_schema_def_t db_schema; //< Declared in text_exchange_schema.c
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 void
 print_error_message( const char * message, ... )
 {
@@ -72,7 +72,7 @@ print_error_message( const char * message, ... )
     va_end( va );
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -80,8 +80,9 @@ create_database(char* database_name, dbs_schema_def_t *schema)
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, NULL);
 
-    if (hdb == NULL)
+    if (hdb == NULL) {
         return NULL;
+    }
 
     if (dbs_create_schema(hdb, schema) < 0) {
         db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
@@ -93,24 +94,23 @@ create_database(char* database_name, dbs_schema_def_t *schema)
     return hdb;
 }
 
-static const char *csv = 
+static const char *csv =
     "int64_field,float64_field,ansi_field,utf8_field\r\n"
     "1,1.243,\"ansi_field\",\"utf8\"\r\n"
     "2,1.253,\"ansi_fklasjdflield\",\"Дискобол\"\r\n"
     "3,1.263,\"ansi_field\",\"utf8\",\r\n"
     "4,1.273,\"ansi_field\",\"utf8\""
-    ;
+;
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     // Create database v1 schema
     db_t hdb = create_database( EXAMPLE_DATABASE, &db_schema );
     int rc = EXIT_FAILURE;
-    if( hdb ) {        
+    if( hdb ) {
         rc = csv_import( hdb, "storage", csv, strlen(csv), 0 );
     }
 
     return rc;
 }
-

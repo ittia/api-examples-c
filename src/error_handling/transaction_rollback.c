@@ -39,8 +39,8 @@
 #define EXAMPLE_DATABASE "transaction_rollback.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -71,11 +71,11 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, storage_cfg);
 
@@ -100,6 +100,13 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
 int
 load_readings( db_t hdb )
 {
+    db_result_t rc = DB_OK;
+    int i;
+    int64_t current_packet = 0;
+    int is_wrong_packet = 0;
+    int in_tx = 0;
+    int good_packets = 0;
+
     static storage_t readings[] = {
         // sensorid, packetid, timestamp, temperature
         // Invalid packet
@@ -113,7 +120,7 @@ load_readings( db_t hdb )
         { 3, 1, "2015-07-29 01:10:01", "-3.8" },
         { 3, 1, "2015-07-29 01:15:01", "-4.9" },
         { 3, 1, "2015-02-30 01:20:01", "-5.0" },
-        
+
         // Good packet
         { 1, 2, "2015-07-29 01:01:01", "-1.1" },
         { 1, 2, "2015-07-29 01:05:01", "1.9" },
@@ -125,26 +132,19 @@ load_readings( db_t hdb )
 
     };
     db_row_t row;
-    
-    row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
-    if( NULL == row ) {
-        print_error_message( "Couldn't pupulate 'storage' table", NULL );
-        return EXIT_FAILURE;
-    }
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
     };
     db_cursor_t c;
 
-    c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
+    row = db_alloc_row( binds_def, DB_ARRAY_DIM( binds_def ) );
+    if( NULL == row ) {
+        print_error_message( "Couldn't pupulate 'storage' table", NULL );
+        return EXIT_FAILURE;
+    }
 
-    db_result_t rc = DB_OK;
-    int i;
-    int64_t current_packet = 0;
-    int is_wrong_packet = 0;
-    int in_tx = 0;
-    int good_packets = 0;
+    c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
 
     for( i = 0; i < DB_ARRAY_DIM(readings) && DB_OK == rc; ++i ) {
         /* Start a new transaction when a new packet is encountered */
@@ -174,14 +174,14 @@ load_readings( db_t hdb )
             // Some error occured on insertion
             int ecode = get_db_error();
             is_wrong_packet = 1;
-            // See the kind of error 
-            if( DB_EINVALIDNUMBER == ecode 
+            // See the kind of error
+            if( DB_EINVALIDNUMBER == ecode
                 || DB_ECONVERT == ecode
-                || DB_EINVTYPE == ecode 
-                || DB_EDUPLICATE == ecode 
+                || DB_EINVTYPE == ecode
+                || DB_EDUPLICATE == ecode
                 )
             {
-                // It seems data conversion error. Continue loading loop 
+                // It seems data conversion error. Continue loading loop
                 clear_db_error();
                 fprintf( stderr, "Couldn't insert reading. Skip packet %" PRId64 "\n", readings[i].packetid );
             } else {
@@ -191,12 +191,14 @@ load_readings( db_t hdb )
             }
         }
     }
-    // If last good packet's changes is uncommited, commit them now 
+    // If last good packet's changes is uncommited, commit them now
     if( in_tx && !is_wrong_packet ) {
-        if( DB_OK == db_commit_tx( hdb, 0 ) )
+        if( DB_OK == db_commit_tx( hdb, 0 ) ) {
             good_packets++;
-        else
+        }
+        else {
             print_error_message( "Couldn't commit packet data", c );
+        }
     }
 
     db_free_row( row );
@@ -206,20 +208,20 @@ load_readings( db_t hdb )
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     db_t hdb;                   // db to create and insert rows
-    
+
     hdb = create_database( EXAMPLE_DATABASE, &db_schema, NULL );
-    if (!hdb)
+    if (!hdb) {
         goto exit;
+    }
 
     // Start transactions generation. Part of transactions commit with DB_LAZY_COMPLETION flag to make them to be deffered
     rc = load_readings( hdb );
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
-  exit:
+exit:
     return rc;
 }
-

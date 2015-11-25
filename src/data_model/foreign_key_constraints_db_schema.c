@@ -45,7 +45,7 @@ static db_indexdef_t storage_indexes[] =
       storage_pkey_fields },              /* fields  */
 };
 
-static db_foreign_key_def_t storage_fkeys[] = 
+static db_foreign_key_def_t storage_fkeys[] =
 {
     { UNIT_FKEY_NAME,                           /* fk_name   */
       UNITS_TABLE,                              /* ref_table */
@@ -61,8 +61,7 @@ static db_foreign_key_def_t storage_fkeys[] =
               UNITID_FNO,                       /* org_field    */
               UNITID_FNO,                       /* ref_field - Field number in the referenced table */
           }
-      }
-    },
+      }},
     { BARCODE_FKEY_NAME,                        /* fk_name   */
       BARCODES_TABLE,                           /* ref_table */
       DB_FK_MATCH_SIMPLE,                       /* match_option */
@@ -77,8 +76,7 @@ static db_foreign_key_def_t storage_fkeys[] =
               BARCODEID_FNO,                    /* org_field    */
               BARCODEID_FNO,                    /* ref_field - Field number in the referenced table */
           }
-      }
-    },
+      }},
 };
 
 static db_fielddef_t units_fields[] =
@@ -118,45 +116,44 @@ static db_indexdef_t barcodes_indexes[] =
       barcodes_pkey_fields },              /* fields  */
 };
 
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_DEFAULT,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_DEFAULT,
         UNITS_TABLE,
         DB_ARRAY_DIM(units_fields),
         units_fields,
         DB_ARRAY_DIM(units_indexes),   // Indexes array size
-                     units_indexes,    // Indexes array
+        units_indexes,                 // Indexes array
         0, NULL    // FKey array size    // FKeys array
     },
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_DEFAULT,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_DEFAULT,
         BARCODES_TABLE,
         DB_ARRAY_DIM(barcodes_fields),
         barcodes_fields,
         DB_ARRAY_DIM(barcodes_indexes),   // Indexes array size
-                     barcodes_indexes,    // Indexes array
+        barcodes_indexes,                 // Indexes array
         0, NULL    // FKey array size    // FKeys array
     },
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_DEFAULT,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_DEFAULT,
         STORAGE_TABLE,
         DB_ARRAY_DIM(storage_fields),
         storage_fields,
         DB_ARRAY_DIM(storage_indexes),   // Indexes array size
-                     storage_indexes,    // Indexes array
+        storage_indexes,                 // Indexes array
         DB_ARRAY_DIM(storage_fkeys),     // FKey array size
-                     storage_fkeys       // FKeys array
+        storage_fkeys                    // FKeys array
     },
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables,
     0, NULL // sequences
 };
-

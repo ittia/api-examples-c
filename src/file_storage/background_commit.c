@@ -39,8 +39,8 @@
 #define EXAMPLE_DATABASE "background_commit.ittiadb"
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -71,11 +71,11 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, storage_cfg);
 
@@ -98,7 +98,7 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
 
 typedef struct {
     int lazy_tx;
-    int forced_tx;    
+    int forced_tx;
 } trans_stat_t;
 
 int check_data( db_t hdb, const trans_stat_t * stat )
@@ -123,32 +123,39 @@ int check_data( db_t hdb, const trans_stat_t * stat )
     db_rc = db_seek_first(c);
 
     // Scan table and check that pkey values are monotonically increase
-    int counter = 0;
-    trans_stat_t s = { 0, 0 };
-    for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
     {
-        db_rc = db_fetch(c, row, &row_data);
-        if( row_data.f1 != ++counter )
-            break;
-        s.lazy_tx += row_data.f2 == 50 ? 1 : 0;
-        s.forced_tx += row_data.f2 == 16 ? 1 : 0;
-    }
+        int counter = 0;
+        trans_stat_t s = { 0, 0 };
+        for(; !db_eof(c) && DB_OK == db_rc; db_rc = db_seek_next(c) )
+        {
+            db_rc = db_fetch(c, row, &row_data);
+            if( row_data.f1 != ++counter ) {
+                break;
+            }
+            s.lazy_tx += row_data.f2 == 50 ? 1 : 0;
+            s.forced_tx += row_data.f2 == 16 ? 1 : 0;
+        }
 
-    if( DB_OK != db_rc ) 
-        print_error_message( "Error to scan table of backup db\n", c );        
-    else if( row_data.f1 != counter )
-        fprintf( stderr, "Pkey field values sequence violation detected in backup db: (%" PRId64 ", %d)\n", 
-                 row_data.f1, counter 
-            );
-    else if( s.lazy_tx != stat->lazy_tx )
-        fprintf( stderr, "Unexpected count of records which was commited in lazy-commit mode: %d, but expected %d.\n",
-                 s.lazy_tx, stat->lazy_tx );
-    else if( s.forced_tx != stat->forced_tx )
-        fprintf( stderr, "Unexpected count of records which was commited in force-commit mode: %d, but expected %d.\n",
-                 s.forced_tx, stat->forced_tx );
-    else {
-        fprintf( stdout, "%d records is inside\n", counter );
-        rc = EXIT_SUCCESS;
+        if( DB_OK != db_rc ) {
+            print_error_message( "Error to scan table of backup db\n", c );
+        }
+        else if( row_data.f1 != counter ) {
+            fprintf( stderr, "Pkey field values sequence violation detected in backup db: (%" PRId64 ", %d)\n",
+                     row_data.f1, counter
+                     );
+        }
+        else if( s.lazy_tx != stat->lazy_tx ) {
+            fprintf( stderr, "Unexpected count of records which was commited in lazy-commit mode: %d, but expected %d.\n",
+                     s.lazy_tx, stat->lazy_tx );
+        }
+        else if( s.forced_tx != stat->forced_tx ) {
+            fprintf( stderr, "Unexpected count of records which was commited in force-commit mode: %d, but expected %d.\n",
+                     s.forced_tx, stat->forced_tx );
+        }
+        else {
+            fprintf( stdout, "%d records is inside\n", counter );
+            rc = EXIT_SUCCESS;
+        }
     }
 
     db_close_cursor( c );
@@ -158,10 +165,11 @@ int check_data( db_t hdb, const trans_stat_t * stat )
     return rc;
 }
 
-int 
-perform_transactions( db_t hdb, trans_stat_t *stat ) 
+int
+perform_transactions( db_t hdb, trans_stat_t *stat )
 {
-    db_row_t row;   
+    int i;
+    db_row_t row;
     db_table_cursor_t p = {
         NULL,   //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
@@ -181,7 +189,6 @@ perform_transactions( db_t hdb, trans_stat_t *stat )
     c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
 
     db_rc = DB_OK;
-    int i;
     for( i = 0; i < 100 && DB_OK == db_rc; ++i ) {
         int do_lazy_commit = i % 5;
         db_rc = db_begin_tx( hdb, 0 );
@@ -189,52 +196,56 @@ perform_transactions( db_t hdb, trans_stat_t *stat )
         row2ins.f2 = do_lazy_commit ? 50 : 16;
         db_rc = db_insert(c, row, &row2ins, 0);
         db_commit_tx( hdb, do_lazy_commit ? DB_LAZY_COMPLETION : DB_DEFAULT_COMPLETION );
-        if( do_lazy_commit )
+        if( do_lazy_commit ) {
             stat->lazy_tx++;
-        else
+        }
+        else {
             stat->forced_tx++;
+        }
 
         if( i % 30 ) {
             db_flush_tx( hdb, DB_FLUSH_JOURNAL );
         }
     }
 
-    if( DB_OK != db_rc )
+    if( DB_OK != db_rc ) {
         print_error_message( "Error inserting or commiting\n", c );
-        
+    }
+
     db_close_cursor( c );
     db_free_row( row );
-    
+
     return DB_OK == db_rc ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
     db_t hdb;                   // db to create and insert rows
     trans_stat_t stat = { 0, 0 };
-    
+
     hdb = create_database( EXAMPLE_DATABASE, &db_schema, NULL );
-    if (!hdb)
+    if (!hdb) {
         goto exit;
+    }
 
     // Start transactions generation. Part of transactions commit with DB_LAZY_COMPLETION flag to make them to be deferred
     rc = perform_transactions( hdb, &stat );
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
-    if( rc != EXIT_SUCCESS ) goto exit;
+    if( rc != EXIT_SUCCESS ) {goto exit; }
 
     rc = EXIT_FAILURE;
     // Reopen DB and check if all transactions are really there
     hdb = db_open_file_storage(EXAMPLE_DATABASE, NULL);
-    if (!hdb)
+    if (!hdb) {
         goto exit;
-    
+    }
+
     rc = check_data( hdb, &stat );
 
 
-  exit:
+exit:
     return rc;
 
 }
-

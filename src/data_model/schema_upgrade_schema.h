@@ -22,10 +22,10 @@
 /**************************************************************************/
 
 /*-------------------------------------------------------------------------*
- * @file schema_upgrade_db_schema.h                                        *
- *                                                                         *
- * schema_upgrade example DB schemas definitions                           *
- *-------------------------------------------------------------------------*/
+* @file schema_upgrade_db_schema.h                                        *
+*                                                                         *
+* schema_upgrade example DB schemas definitions                           *
+*-------------------------------------------------------------------------*/
 
 #ifndef SCHEMA_UPGRADE_SCHEMA_H
 #define SCHEMA_UPGRADE_SCHEMA_H 1
@@ -43,9 +43,9 @@
 #define MAX_SEX_TITLE           5    /* ANSI characters */
 
 /*-------------------------------------------------------------------------*
- * CONTACT field IDs                                                       *
- *-------------------------------------------------------------------------*/
-#define CONTACT_ID              0   
+* CONTACT field IDs                                                       *
+*-------------------------------------------------------------------------*/
+#define CONTACT_ID              0
 #define CONTACT_NAME            1
 #define CONTACT_RING_ID         2
 #define CONTACT_SEX             3
@@ -61,13 +61,13 @@ typedef enum {
 
 #define SCHEMA_VERSION_TABLE           "SCHEMA_VERSION"
 /*-------------------------------------------------------------------------*
- * VERSION field IDs                                                       *
- *-------------------------------------------------------------------------*/
+* VERSION field IDs                                                       *
+*-------------------------------------------------------------------------*/
 #define SCHEMA_VERSION_VERSION  0
 
 typedef struct {
     dbs_schema_def_t schema;
     int version;
-} dbs_versioned_schema_def_t ;
+} dbs_versioned_schema_def_t;
 
 #endif // SCHEMA_UPGRADE_DB_SCHEMAS_H

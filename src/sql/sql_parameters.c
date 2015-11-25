@@ -78,8 +78,8 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 }
 
 /**
-* Execute an SQL statement, checking for errors.
-*/
+ * Execute an SQL statement, checking for errors.
+ */
 static int
 execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t parameters )
 {
@@ -124,12 +124,12 @@ ins_data( db_t hdb )
                               "  data sint32"
                               ")",
                               NULL, NULL
-            ) &&
-        0 == execute_command( hdb, 
+                              ) &&
+        0 == execute_command( hdb,
                               "insert into storage (id, data)"
                               "  select N, 100 - N from $nat(100)",
                               NULL, NULL
-            )
+                              )
         )
     {
         return EXIT_SUCCESS;
@@ -142,7 +142,6 @@ static void
 process_record( int32_t id, int32_t data )
 {
     /* Stub function: process a record from the database. */
-    return;
 }
 
 static int
@@ -172,11 +171,11 @@ select_parametrized_query( db_t hdb )
 
     /* Prepare query with two parameter placeholders */
     sql_cursor = db_prepare_sql_cursor( hdb,
-        "select id, data"
-        "  from storage"
-        "  where id > ? and data > ?",
-        0
-        );
+                                        "select id, data"
+                                        "  from storage"
+                                        "  where id > ? and data > ?",
+                                        0
+                                        );
 
     if( NULL == sql_cursor ) {
         print_error_message( sql_cursor, "preparing parametrized query" );
@@ -232,14 +231,14 @@ select_parametrized_query( db_t hdb )
     /* Parameterize FETCH FIRST and OFFSET clauses to read the entire table in pages. */
 
     sql_cursor = db_prepare_sql_cursor(
-        hdb, 
-        "select id, data"
-        "  from storage"
-        "  order by id"
-        "  offset ? rows"
-        "  fetch first ? rows only",
-        0
-        );
+            hdb,
+            "select id, data"
+            "  from storage"
+            "  order by id"
+            "  offset ? rows"
+            "  fetch first ? rows only",
+            0
+            );
     if( NULL == sql_cursor ) {
         print_error_message( sql_cursor, "preparing parametrized query" );
         goto select_query_exit;
@@ -256,7 +255,7 @@ select_parametrized_query( db_t hdb )
         if( DB_OK != db_execute( sql_cursor, params_row, NULL ) ) {
             print_error_message( sql_cursor, "while executing select with (offset, ffirst) = (%d, %d)\n",
                                  offset_param, ffirst_param
-                );
+                                 );
             goto select_query_exit;
         }
 
@@ -273,17 +272,17 @@ select_parametrized_query( db_t hdb )
 
     rc = EXIT_SUCCESS;
 
-  select_query_exit:
-    
+select_query_exit:
+
     db_free_row( r );
     db_free_row( params_row );
     db_close_cursor( sql_cursor );
-    
+
     return rc;
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
 
@@ -292,11 +291,13 @@ example_main(int argc, char **argv)
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(EXAMPLE_DATABASE, NULL);
 
-    if( NULL != hdb )
+    if( NULL != hdb ) {
         rc = ins_data( hdb );
+    }
 
-    if( EXIT_SUCCESS == rc )
+    if( EXIT_SUCCESS == rc ) {
         db_commit_tx( hdb, 0 );
+    }
 
     rc = select_parametrized_query( hdb );
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);

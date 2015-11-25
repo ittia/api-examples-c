@@ -66,41 +66,41 @@ typedef struct {
 } barcodes_db_row_t;
 
 static const db_bind_t storage_binds_def[] = {
-    { 
+    {
         UNITID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_db_row_t, unitid ),
         DB_BIND_SIZE( storage_db_row_t, unitid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         BARCODEID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_db_row_t, barcodeid ),
         DB_BIND_SIZE( storage_db_row_t, barcodeid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         ARTICLEID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( storage_db_row_t, articleid ),
         DB_BIND_SIZE( storage_db_row_t, articleid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         ARTICLENAME_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( storage_db_row_t, articlename ),
         DB_BIND_SIZE( storage_db_row_t, articlename ), -1, DB_BIND_RELATIVE
     },
 };
 
 static const db_bind_t units_binds_def[] = {
-    { 
+    {
         UNITID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( units_db_row_t, unitid ),
         DB_BIND_SIZE( units_db_row_t, unitid ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         UNITNAME_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( units_db_row_t, unitname ),
         DB_BIND_SIZE( units_db_row_t, unitname ), -1, DB_BIND_RELATIVE
     },
 };
 
 static const db_bind_t barcodes_binds_def[] = {
-    { 
+    {
         BARCODE_FNO, DB_VARTYPE_ANSISTR,  DB_BIND_OFFSET( barcodes_db_row_t, barcode ),
         DB_BIND_SIZE( barcodes_db_row_t, barcode ), -1, DB_BIND_RELATIVE
     },
-    { 
+    {
         BARCODEID_FNO, DB_VARTYPE_SINT32,  DB_BIND_OFFSET( barcodes_db_row_t, barcodeid ),
         DB_BIND_SIZE( barcodes_db_row_t, barcodeid ), -1, DB_BIND_RELATIVE
     },

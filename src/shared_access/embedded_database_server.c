@@ -69,15 +69,15 @@ static db_tabledef_t table_t = {
     0, NULL,
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     1,
     &table_t
 };
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( db_cursor_t cursor, const char * message, ... )
 {
@@ -118,11 +118,11 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 /**
  * Helper function to create DB
  */
-db_t 
+db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
-    
+
     /* Create a new file storage database with default parameters. */
     hdb = db_create_file_storage(database_name, NULL);
 
@@ -165,8 +165,9 @@ example_main( int argc, char **argv )
     }
     /* Create a database to share with clients */
     hdb = create_database( DB_FILENAME, &db_schema );
-    if ( !hdb )
+    if ( !hdb ) {
         goto exit;
+    }
 
     /* A storage cannot be mounted while open */
     db_shutdown( hdb, DB_SOFT_SHUTDOWN, NULL );
@@ -192,7 +193,7 @@ example_main( int argc, char **argv )
                 fputc( '.', stdout );
             }
             fputc( '\n', stdout );
-            
+
             db_server_stop( 0 );
 
             rc = EXIT_SUCCESS;
@@ -207,4 +208,3 @@ exit:
 
     return rc;
 }
-

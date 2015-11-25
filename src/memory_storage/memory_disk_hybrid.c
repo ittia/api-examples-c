@@ -50,7 +50,7 @@ static int64_t cache_sizes[ CT_GUARD ] = { 0, 0 };
 /// Limits to count of records into in-mem (500) and on-disk (10000) caches
 static int64_t cache_size_limits[ CT_GUARD ] = { 100, 220 };
 /**
- * When cache_sizes[x] limit reaches cache_size_limits[x], delete cache_del_chunks[x] count of the 
+ * When cache_sizes[x] limit reaches cache_size_limits[x], delete cache_del_chunks[x] count of the
  * most aged records from cache 'x'
  */
 static int cache_del_chunks[ CT_GUARD ] = { 1, 100 };
@@ -59,11 +59,11 @@ static int cache_del_chunks[ CT_GUARD ] = { 1, 100 };
 #define CLIENT_REQUESTS 1460
 
 // Helper macro to pull & print (if any) db error
-#define GET_ECODE(x,m,c) do {                       \
+#define GET_ECODE(x, m, c) do {                       \
         x = get_db_error();                         \
-        if( DB_NOERROR != x )                       \
-            print_error_message(m, c);              \
-    } while(0)
+        if( DB_NOERROR != x ) {                       \
+            print_error_message(m, c); }              \
+} while(0)
 
 int sdb_merge_mem_cache_to_disk();
 int resolve_ip_by_hostname( const char * hostname, char *ip);
@@ -88,8 +88,8 @@ static int snprintf( char *outBuf, size_t size, const char *format, ... )
 #endif
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -124,12 +124,12 @@ static db_t hdb;
 /**
  * Helper function to create DB
  */
-db_t 
+db_t
 open_or_create_database(char* database_name, dbs_schema_def_t *schema, db_storage_config_t * storage_cfg)
 {
-    fprintf( stdout, "enter open_or_create_database\n" );
-
     int is_opened = 0;
+
+    fprintf( stdout, "enter open_or_create_database\n" );
 
     if( !storage_cfg || DB_FILE_STORAGE == storage_cfg->storage_mode ) {
         /* Create a new file storage database with default parameters. */
@@ -139,12 +139,14 @@ open_or_create_database(char* database_name, dbs_schema_def_t *schema, db_storag
         if(hdb == NULL) {
             clear_db_error();
             hdb = db_create_file_storage(database_name, file_storage_cfg);
-        } else
+        }
+        else {
             is_opened = 1;
+        }
     } else {
         /* Create a new memory storage database with default parameters. */
         db_memory_storage_config_t *mem_storage_cfg = storage_cfg ? &storage_cfg->u.memory_storage : 0;
-        hdb = db_create_memory_storage(database_name, mem_storage_cfg);        
+        hdb = db_create_memory_storage(database_name, mem_storage_cfg);
     }
 
     if(hdb == NULL) {
@@ -172,12 +174,12 @@ static void close_sequences();
 static void generate_hostname( char * );
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = DB_FAILURE;
     db_t hdb;                   // db to create and insert rows
     db_storage_config_t storage_config;
-    
+
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
@@ -185,88 +187,97 @@ example_main(int argc, char **argv)
     db_file_storage_config_init(&storage_config.u.file_storage);
 
     storage_config.storage_mode = DB_FILE_STORAGE;
-    storage_config.u.file_storage.memory_page_size = DB_DEF_PAGE_SIZE * 4/*DB_MIN_PAGE_SIZE*/;
+    storage_config.u.file_storage.memory_page_size = DB_DEF_PAGE_SIZE * 4 /*DB_MIN_PAGE_SIZE*/;
     storage_config.u.file_storage.memory_storage_size = storage_config.u.memory_storage.memory_page_size * 100;
     hdb = open_or_create_database( EXAMPLE_DATABASE, &disk_db_schema, &storage_config );
 
     db_file_storage_config_destroy(&storage_config.u.file_storage);
     db_storage_config_destroy(&storage_config);
-    if (!hdb)
+    if (!hdb) {
         goto exit;
+    }
 
     if( 0 == sdb_copy_disk_to_mem_cache() ) {
-        
+        int i = 0;
+
         open_sequences( hdb );
 
         // Emulate clients' requests
-        int i = 0;
         rc = DB_NOERROR;
-        for( ; i < CLIENT_REQUESTS && DB_NOERROR == rc ; ++i ) {
+        for(; i < CLIENT_REQUESTS && DB_NOERROR == rc; ++i ) {
             char hostname[ MAX_HOSTNAME_LEN + 1 ];
             char ip[ MAX_IP_LEN + 1 ];
-            generate_hostname( hostname );            
+            generate_hostname( hostname );
             rc = resolve_ip_by_hostname( hostname, ip);
-            printf( "%d. Hostname: %s, ip: %s, cache_sizes(%"PRId64", %"PRId64"):, rc: %d\n", 
+            printf( "%d. Hostname: %s, ip: %s, cache_sizes(%" PRId64 ", %" PRId64 "):, rc: %d\n",
                     i, hostname, ip, cache_sizes[IN_MEM], cache_sizes[ON_DISK], rc );
         }
 
         rc = sdb_merge_mem_cache_to_disk();
 
-        if( DB_NOERROR == rc && db_is_active_tx( hdb ) )
+        if( DB_NOERROR == rc && db_is_active_tx( hdb ) ) {
             db_commit_tx( hdb, 0 );
+        }
 
         close_sequences();
 
-    } else
+    }
+    else {
         fprintf( stderr, "Couldn't load in-mem cache data\n" );
+    }
 
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
-  exit:
+exit:
     return rc == DB_NOERROR ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 //--------------------- Example Data generators -------------------
 /// Emulate DNS-server side for our example
 /**
- *  For simplicity of our example, suppose dns request has always successfull result, and each request 
+ *  For simplicity of our example, suppose dns request has always successfull result, and each request
  *  always returns different ip-addreses if even hostname is the same.
  */
 void do_dns_server_request( const char * hostname, char * ip )
 {
-    static int ip_idx = 0;   
+    static int ip_idx = 0;
     snprintf( ip, MAX_IP_LEN, "%d.%d.%d.%d", 192, 168 + ip_idx++ % 80, 250 - ip_idx % 242, 1 + ip_idx % 250 );
 }
 
 /**
    generate names of form "host_a".."host_z", "host_aa".."host_zz"
  */
-static 
+static
 void generate_hostname( char *hname)
 {
+    int i = 0;
     static int hidx = 0;
+    int hidx_cur;
     int suffix_len = 1;
-    
+
     hidx %= EMULATE_HOSTSNAMES_COUNT;
 
     if( (int)(hidx / 26 / 26) ) {
         hidx = 0;
         suffix_len = 1;
-    } else if( (int)(hidx / 26 ) ) {
+    }
+    else if( (int)(hidx / 26 ) ) {
         suffix_len = 2;
-    } else suffix_len = 1;
+    }
+    else {
+        suffix_len = 1;
+    }
 
-    int i = 0;
     strncpy( hname, "host_", MAX_HOSTNAME_LEN );
-    
-    int hidx_ = hidx++;
-    for( ; i < suffix_len; ++i, hidx_/=26 ) {
-        hname[ 5 + i ] = 65 + hidx_ % 26;        
+
+    hidx_cur = hidx++;
+    for(; i < suffix_len; ++i, hidx_cur/=26 ) {
+        hname[ 5 + i ] = 65 + hidx_cur % 26;
     }
     hname[ 5 + suffix_len ] = 0;
 }
 
-/// Sequence we use to provide module with pkey values & 'age' of cache records 
+/// Sequence we use to provide module with pkey values & 'age' of cache records
 static db_sequence_t age_seq = NULL;
 static void
 open_sequences(db_t hdb)
@@ -282,13 +293,14 @@ close_sequences()
 /**
  * Next sequence value helper function.
  */
-static uint64_t 
+static uint64_t
 seq_next( db_sequence_t hseq )
 {
     db_seqvalue_t v;
 
-    if (db_next_sequence(hseq, &v) == NULL)
+    if (db_next_sequence(hseq, &v) == NULL) {
         return 0;
+    }
 
     return v.int32.low;
 }
@@ -296,7 +308,7 @@ seq_next( db_sequence_t hseq )
 /**
  *  Get 'current' age of cache
  */
-static int64_t 
+static int64_t
 next_age()
 {
     return seq_next( age_seq );
@@ -315,7 +327,7 @@ static int sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *result );
    - If search both chaches failed, request 'dns-server' (fake generator in this example) to resolve. Put resolved
      data in both in-mem & on-disk caches;
  */
-int 
+int
 resolve_ip_by_hostname( const char * hostname, char *ip)
 {
     int rc = DB_FAILURE;
@@ -341,9 +353,9 @@ resolve_ip_by_hostname( const char * hostname, char *ip)
 /*
                 if( DB_NOERROR == rc )
                     rc = sdb_put_into_cache( IN_MEM, &cache_row );
-*/
+ */
             }
-        } 
+        }
     }
 
     if( DB_NOERROR == rc ) {
@@ -355,7 +367,7 @@ resolve_ip_by_hostname( const char * hostname, char *ip)
 /**
  *  Search requested cache type for hostname and update statistics, if found.
  */
-static 
+static
 int sdb_search_cache( cache_type_t ctype, const char *hostname, cache_db_row_t *result )
 {
     int rc = DB_FAILURE;
@@ -369,13 +381,13 @@ int sdb_search_cache( cache_type_t ctype, const char *hostname, cache_db_row_t *
     const char * table_name = ctype == IN_MEM ? MEM_HOSTS_TABLE : DISK_HOSTS_TABLE;
 
     search_row = db_alloc_row( NULL, 1 );
-    dbs_bind_addr( search_row, HOSTNAME_FNO, DB_VARTYPE_ANSISTR, 
+    dbs_bind_addr( search_row, HOSTNAME_FNO, DB_VARTYPE_ANSISTR,
                    (char*)hostname, MAX_HOSTNAME_LEN, NULL );
-    
+
     result_row = db_alloc_row( host_binds_def, DB_ARRAY_DIM( host_binds_def ) );
 
     c = db_open_table_cursor(hdb, table_name, &p);
-    if( DB_OK == db_seek( c, DB_SEEK_FIRST_EQUAL, search_row, 0, 1 ) 
+    if( DB_OK == db_seek( c, DB_SEEK_FIRST_EQUAL, search_row, 0, 1 )
         && DB_OK == db_fetch( c, result_row, result )
         )
     {
@@ -386,8 +398,9 @@ int sdb_search_cache( cache_type_t ctype, const char *hostname, cache_db_row_t *
         }
     }
     rc = get_db_error();
-    if( DB_NOERROR != rc && DB_ENOTFOUND != rc )
+    if( DB_NOERROR != rc && DB_ENOTFOUND != rc ) {
         print_error_message( "Fail to search cache", c );
+    }
     clear_db_error();
 
     db_free_row( search_row );
@@ -421,8 +434,9 @@ sdb_shape_cache( cache_type_t ctype )
     }
 
     rc = get_db_error();
-    if( DB_NOERROR != rc )
+    if( DB_NOERROR != rc ) {
         print_error_message( "Occured when deleting cache records", c );
+    }
     db_free_row(row);
     db_close_cursor(c);
 
@@ -439,25 +453,27 @@ int sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *data )
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
     };
     const char * table_name = ctype == IN_MEM ? MEM_HOSTS_TABLE : DISK_HOSTS_TABLE;
-    
+
     if( cache_sizes[ ctype ] > cache_size_limits[ ctype ] ) {
         sdb_shape_cache( ctype );
     }
 
     row = db_alloc_row( host_binds_def, DB_ARRAY_DIM( host_binds_def ) );
 
-    c = db_open_table_cursor(hdb, table_name, &p);    
+    c = db_open_table_cursor(hdb, table_name, &p);
     db_insert( c, row, data, 0 );
 
     rc = get_db_error();
     if( DB_NOERROR == rc ) {
+        static int commits = 0;
         cache_sizes[ ctype ]++;
-        static int commits = 0;        
         if( ON_DISK == ctype && 0 == commits++ % 50) {
             db_commit_tx( hdb, 0 );
         }
-    } else
+    }
+    else {
         print_error_message( "Couldn't put data into cache", c );
+    }
 
     db_free_row( row );
     db_close_cursor( c );
@@ -480,20 +496,20 @@ sdb_copy_disk_to_mem_cache()
         HOSTS_BY_AGE_INDEX_NAME,       //< index
         DB_CAN_MODIFY | DB_SCAN_BACKWARD | DB_LOCK_EXCLUSIVE
     };
-    
+
     static db_table_cursor_t p_dst = {
         NULL,       //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
     };
-    
+
     row = db_alloc_row( host_binds_def, DB_ARRAY_DIM( host_binds_def ) );
 
     c_src = db_open_table_cursor(hdb, DISK_HOSTS_TABLE, &p_src);
     c_dst = db_open_table_cursor(hdb, MEM_HOSTS_TABLE, &p_dst);
-    
+
     for( db_seek_last(c_src); !db_bof(c_src) && DB_NOERROR == rc; db_seek_prior( c_src ) ) {
         ++cache_sizes[ON_DISK];
-        if( --count2cpy > 0 ) {         
+        if( --count2cpy > 0 ) {
             if( DB_OK == db_fetch( c_src, row, &data ) ) {
                 if( DB_OK == db_insert( c_dst, row, &data, 0 ) ) {
                     ++cache_sizes[IN_MEM];
@@ -529,17 +545,17 @@ sdb_merge_mem_cache_to_disk()
         HOSTS_BY_AGE_INDEX_NAME,       //< index
         DB_CAN_MODIFY | DB_SCAN_BACKWARD | DB_LOCK_EXCLUSIVE
     };
-    
+
     static db_table_cursor_t p_dst = {
         HOSTS_PKEY_INDEX_NAME,       //< No index
         DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
     };
-    
+
     row = db_alloc_row( host_binds_def, DB_ARRAY_DIM( host_binds_def ) );
 
     c_src = db_open_table_cursor(hdb, MEM_HOSTS_TABLE, &p_src);
     c_dst = db_open_table_cursor(hdb, DISK_HOSTS_TABLE, &p_dst);
-    
+
     for( db_seek_last(c_src); !db_bof(c_src) && DB_NOERROR == rc; db_seek_prior( c_src ) ) {
 
         inmem_real_size++;
@@ -559,7 +575,7 @@ sdb_merge_mem_cache_to_disk()
         rc = get_db_error();
 
     }
-    
+
     GET_ECODE( rc, "while copying from on-disk to in-mem caches", NULL );
     fprintf( stdout, "Mem->Disk merge result (error_code, inmem_size, inserted, updated): (%d, %d, %d, %d)\n", rc, inmem_real_size, ins_cnt, upd_cnt );
 
@@ -569,4 +585,3 @@ sdb_merge_mem_cache_to_disk()
 
     return rc;
 }
-

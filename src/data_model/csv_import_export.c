@@ -33,7 +33,7 @@ const char FIELD_DELIM = ',';
 const char FIELD_QUOTE = '"';
 
 /// Callback to fetch more csv data from input buffer
-typedef ptrdiff_t ( *read_more_data_callback_t ) ( char ** d, void * context );
+typedef ptrdiff_t ( *read_more_data_callback_t )( char ** d, void * context );
 /// Callback to call to store just parsed field data
 typedef int (*got_field_callback_t)( int lineno, int fieldno, size_t pos, const char * data, size_t len, void * db_context);
 /// Callback to call to storee just parsed line
@@ -65,17 +65,19 @@ static void parse_input( read_more_data_callback_t cb, void *cb_data, got_field_
 
 /// Callback that fetch more data from input data_provider (in-memory string buffer)
 /** Returns size of data read in call or -1 if some error */
-static ptrdiff_t 
+static ptrdiff_t
 get_more_inmem_data_cb( char ** data, void * cb_data )
 {
+    int chunk_len;
     read_more_inmem_data_context_t * ctx = (read_more_inmem_data_context_t *)cb_data;
 
-    if( ctx->read_size >= ctx->buffer_size )
+    if( ctx->read_size >= ctx->buffer_size ) {
         return 0;
+    }
     *data = (char *)ctx->buffer + ctx->read_size;
     // Just to emulate file io do reading in 10byte chunks
 #define CHUNK_SIZE 10
-    int chunk_len = ( ctx->buffer_size - ctx->read_size > CHUNK_SIZE ) ? CHUNK_SIZE : ( ctx->buffer_size - ctx->read_size );
+    chunk_len = ( ctx->buffer_size - ctx->read_size > CHUNK_SIZE ) ? CHUNK_SIZE : ( ctx->buffer_size - ctx->read_size );
 #undef CHUNK_SIZE
     ctx->read_size += chunk_len;
 
@@ -84,15 +86,16 @@ get_more_inmem_data_cb( char ** data, void * cb_data )
 
 /// Perform import from inmem buffer
 int
-csv_import( 
-    db_t hdb, const char * table_name, const char * buffer, size_t buffer_size, 
+csv_import(
+    db_t hdb, const char * table_name, const char * buffer, size_t buffer_size,
     csv_import_options_t * import_options )
 {
     csv_import_options_t ioptions = { LINE_COMMIT, USE_HEADER };
-    if( import_options )
-        ioptions = *import_options;
-
     read_more_inmem_data_context_t cb_data = { buffer, buffer_size, 0 };
+
+    if( import_options ) {
+        ioptions = *import_options;
+    }
 
     return do_import( hdb, table_name, &ioptions, get_more_inmem_data_cb, &cb_data );
 }
@@ -105,7 +108,7 @@ typedef struct {
     int num_fields;
     int have_tx;
     csv_import_options_t ioptions;
-    int failed; 
+    int failed;
 } db_context_t;
 
 /// Put extracted field data into DB row (db_context->hrow)
@@ -117,13 +120,13 @@ static int got_field_cb( int lineno, int fieldno, size_t in_csv_pos, const char 
         case IGNORE_HEADER: return 0;
         case NO_HEADER: break;
         case USE_HEADER: {
+            int j;
             /// Handle column name got from csv header
             db_fieldno_t col_num = db_find_field( ctx->tab, data );
             if (col_num < 0) {
                 print_error_message("unable to find column %s in target table\n", data);
                 return -1;
             }
-            int j;
             for (j = fieldno; j < ctx->num_fields; j++) {
                 if (ctx->fields[j].fieldno == col_num) {
                     /* mapping found */
@@ -135,18 +138,18 @@ static int got_field_cb( int lineno, int fieldno, size_t in_csv_pos, const char 
                     break;
                 }
             }
-                        
+
             if (j == ctx->num_fields) {
                 print_error_message("column %s mapped twice\n", data);
                 return -1;
             }
-            
+
             return 0;
         }
         }
     }
 
-    if( !ctx->failed && ctx->num_fields > fieldno ) {                
+    if( !ctx->failed && ctx->num_fields > fieldno ) {
         db_result_t res = DB_OK;
         if (len == 0 && (ctx->fields[ fieldno ].field_flags & DB_NULL_MASK) == DB_NULLABLE) {
             res = db_set_null(ctx->hrow, ctx->fields[ fieldno ].fieldno);
@@ -166,14 +169,15 @@ static int got_field_cb( int lineno, int fieldno, size_t in_csv_pos, const char 
             //fprintf( stdout, "line.field: %d.%d = [%s]\n", lineno, fieldno, data );
         }
         if (res == DB_FAIL) {
-            print_error_message("while importing into column '%s', line %d. Input pos: %d(b)", 
+            print_error_message("while importing into column '%s', line %d. Input pos: %d(b)",
                                 ctx->fields[ fieldno ].field_name, lineno, in_csv_pos );
             ctx->failed = 1;
         }
-        if (ctx->failed )
-            fprintf( stderr, "Line %d. %s\n", lineno, 
-                     ctx->ioptions.commit_mode == LINE_COMMIT ? "Skip whole line" : "Cancel processing" 
-                );
+        if (ctx->failed ) {
+            fprintf( stderr, "Line %d. %s\n", lineno,
+                     ctx->ioptions.commit_mode == LINE_COMMIT ? "Skip whole line" : "Cancel processing"
+                     );
+        }
     }
     return 0;
 }
@@ -181,17 +185,22 @@ static int got_field_cb( int lineno, int fieldno, size_t in_csv_pos, const char 
 /// Insert prepared row (db_context->hrow) in DB table (db_context->tab)
 static int got_line_cb( int lineno, int fields, size_t pos, void * db_context)
 {
+    int fieldno;
     db_context_t * ctx = (db_context_t *)db_context;
-    if( lineno == 0 && ( USE_HEADER == ctx->ioptions.header_mode || IGNORE_HEADER == ctx->ioptions.header_mode ) )
+
+    if( lineno == 0 && ( USE_HEADER == ctx->ioptions.header_mode || IGNORE_HEADER == ctx->ioptions.header_mode ) ) {
         return 0;
+    }
 
     if( fields ) {
         if( !ctx->failed && !ctx->have_tx ) {
             if ( db_begin_tx( ctx->hdb, 0) == DB_FAIL ) {
                 print_error_message("unable to start transaction for importing line %d", lineno);
                 ctx->failed = 1;
-            } else
+            }
+            else {
                 ctx->have_tx = 1;
+            }
         }
         if( !ctx->failed ) {
             if (db_insert(ctx->tab, ctx->hrow, NULL, 0) == DB_FAIL) {
@@ -200,9 +209,9 @@ static int got_line_cb( int lineno, int fields, size_t pos, void * db_context)
             }
         }
     }
-                    
+
     if (ctx->ioptions.commit_mode == LINE_COMMIT) {
-                    
+
         if (ctx->have_tx) {
             if(ctx->failed) {
                 db_abort_tx( ctx->hdb, 0 );
@@ -210,7 +219,7 @@ static int got_line_cb( int lineno, int fields, size_t pos, void * db_context)
                 print_error_message("unable to finalize transaction for importing line %d", lineno);
             }
             ctx->have_tx = 0;
-        }                    
+        }
         /* next line might be more successful */
         ctx->failed = 0;
     } else if (ctx->failed) {
@@ -218,19 +227,19 @@ static int got_line_cb( int lineno, int fields, size_t pos, void * db_context)
     }
 
     /* prepare the next row */
-    int fieldno;
-    for ( fieldno = 0; fieldno < ctx->num_fields; fieldno++ )
+    for ( fieldno = 0; fieldno < ctx->num_fields; fieldno++ ) {
         db_set_null(ctx->hrow, ctx->fields[fieldno].fieldno);
+    }
     return 0;
 }
 
-static void parse_input( 
-    read_more_data_callback_t cb, void *cb_data, 
+static void parse_input(
+    read_more_data_callback_t cb, void *cb_data,
     got_field_callback_t got_field_cb, got_line_callback_t got_line_cb,
     void *db_cb_data
     )
 {
-    typedef enum { 
+    typedef enum {
         SIMPLE_ACCUM, QUOTED_ACCUM, CHECK_EOL, CHECK_QUOTE
     } parse_state_t;
 
@@ -259,41 +268,54 @@ static void parse_input(
         if( ep == ch && !eof ) {
             ptrdiff_t sz = (*cb)( &ch, cb_data );
 
-            if( 0 > sz )
+            if( 0 > sz ) {
                 fprintf( stderr, "Error to read csv data source. Position in source(byte): %d\n", hw_pos );
+            }
 
             ep = ch + sz;
-            eof = 0 >= sz;        
+            eof = 0 >= sz;
         }
 
-        //printf("Input to subcycle. ch=%c\n", *ch);        
+        //printf("Input to subcycle. ch=%c\n", *ch);
         while( !eof && ch != ep ) {
             do_fetch = 0;
             got_field = got_line = 0;
             //printf("ch=[%c]; parse_state: %d\n", *ch, parse_state);
             switch(parse_state) {
             case QUOTED_ACCUM:
-                if( FIELD_QUOTE == *ch ) parse_state = CHECK_QUOTE;
-                else do_fetch = 1;
+                if( FIELD_QUOTE == *ch ) {
+                    parse_state = CHECK_QUOTE;
+                }
+                else {
+                    do_fetch = 1;
+                }
                 break;
             case CHECK_QUOTE:
                 if( FIELD_QUOTE == *ch ) {
                     do_fetch = 1;
-                    parse_state = QUOTED_ACCUM; 
+                    parse_state = QUOTED_ACCUM;
                     break;
-                } else parse_state = SIMPLE_ACCUM; 
-                // NO break INTENTIONALLY HERE;
+                }
+                else {
+                    parse_state = SIMPLE_ACCUM;
+                }
+            // NO break INTENTIONALLY HERE;
             case SIMPLE_ACCUM:
-                if( FIELD_DELIM == *ch ) got_field = 1;
-                else if( FIELD_QUOTE == *ch ) parse_state = QUOTED_ACCUM;
+                if( FIELD_DELIM == *ch ) {got_field = 1; }
+                else if( FIELD_QUOTE == *ch ) {parse_state = QUOTED_ACCUM; }
                 else if( EOL[0] == *ch ) {
                     if( EOL_LEN > 1 ) {
                         parse_state =  CHECK_EOL;
                         do_fetch = 1;
                         eol_idx = 0;
-                    } else
+                    }
+                    else {
                         got_field = 1;
-                } else do_fetch = 1;
+                    }
+                }
+                else {
+                    do_fetch = 1;
+                }
                 break;
             case CHECK_EOL:
                 do_fetch = 1;
@@ -314,30 +336,33 @@ static void parse_input(
                         print_error_message("out of memory during import");
                         return;
                     }
-                }                
+                }
                 c_buffer[ symb_len++ ] = *ch;
             } else if( 0 > do_fetch ) {
                 symb_len += do_fetch;
                 c_buffer[ symb_len ] = 0;
             }
             line_len += do_fetch;
-            ++ch,++hw_pos; //,++line_len;
-            if( got_field || got_line )
+            ++ch, ++hw_pos; //,++line_len;
+            if( got_field || got_line ) {
                 break;
+            }
         }
 
         if( ( eof || got_field ) && line_len ) {
             c_buffer[symb_len] = 0;
-            if( 0 != got_field_cb( lines, fieldno, hw_pos, c_buffer, symb_len, db_cb_data ) )
+            if( 0 != got_field_cb( lines, fieldno, hw_pos, c_buffer, symb_len, db_cb_data ) ) {
                 break;
+            }
             symb_len = 0;
             ++fieldno;
         }
-                
-        if( ( eof || got_line ) && line_len ) {            
+
+        if( ( eof || got_line ) && line_len ) {
             line_len = 0;
-            if( 0 != got_line_cb( lines, fieldno, hw_pos, db_cb_data ) )
+            if( 0 != got_line_cb( lines, fieldno, hw_pos, db_cb_data ) ) {
                 break;
+            }
             ++lines;
             fieldno = 0;
         }
@@ -346,10 +371,10 @@ static void parse_input(
     free(c_buffer);
 }
 
-static int 
+static int
 do_import( db_t hdb, const char *table_name, const csv_import_options_t * ioptions, read_more_data_callback_t cb, void *cb_data )
 {
-    typedef enum { 
+    typedef enum {
         SIMPLE_ACCUM, QUOTED_ACCUM, CHECK_EOL, CHECK_QUOTE
     } parse_state_t;
 
@@ -365,7 +390,7 @@ do_import( db_t hdb, const char *table_name, const csv_import_options_t * ioptio
         dbctx.fields = (db_fielddef_t*) malloc( dbctx.num_fields * sizeof(db_fielddef_t) );
 
         if (dbctx.fields) {
-    
+
             int fieldno;
             for (fieldno = 0; fieldno < dbctx.num_fields; fieldno++) {
                 db_get_field( dbctx.tab, fieldno, &dbctx.fields[fieldno] );
@@ -378,12 +403,13 @@ do_import( db_t hdb, const char *table_name, const csv_import_options_t * ioptio
                 db_free_row( dbctx.hrow );
             }
 
-            if (dbctx.have_tx)
+            if (dbctx.have_tx) {
                 db_abort_tx( dbctx.hdb, 0 );
+            }
 
             free(dbctx.fields);
         }
-        db_close_cursor( dbctx.tab );    
+        db_close_cursor( dbctx.tab );
     } else {
         print_error_message("unable to open table '%s'", table_name);
     }
@@ -408,16 +434,18 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
     const char * begin;
     db_fielddef_t * fields = NULL;
 
-    if( export_options )
+    if( export_options ) {
         eoptions = *export_options;
+    }
 
     if (table_name == NULL) {
         print_error_message("table name expected");
         return EXIT_FAILURE;
     }
 
-    if (file_name == NULL)
+    if (file_name == NULL) {
         out_file = stdout;
+    }
     else {
         out_file = fopen(file_name, "wt");
         if (out_file == NULL) {
@@ -477,8 +505,9 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
     if (eoptions.header_mode == USE_HEADER) {
 
         for (fieldno = 0; fieldno < field_count; fieldno++) {
-            if (fieldno > 0)
+            if (fieldno > 0) {
                 fputs(sep, out_file);
+            }
 
             fputs(fields[fieldno].field_name, out_file);
         }
@@ -500,16 +529,18 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
             goto cleanup;
         }
 
-        if (rc)
+        if (rc) {
             break;
+        }
 
         if (db_fetch( tab, row, NULL ) == DB_FAIL) {
             print_error_message("unable to read table");
             goto cleanup;
         }
 
-        if( export_options && export_options->line_prefix && export_options->line_prefix[0] )
+        if( export_options && export_options->line_prefix && export_options->line_prefix[0] ) {
             fprintf( out_file, "%s", export_options->line_prefix );
+        }
         for (fieldno = 0; fieldno < field_count; fieldno++) {
             db_len_t len;
 
@@ -534,8 +565,9 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
                 }
             }
 
-            if (fieldno > 0)
+            if (fieldno > 0) {
                 fputs(sep, out_file);
+            }
 
             fputc(eoptions.field_quote, out_file);
 
@@ -555,8 +587,9 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
             fputc(eoptions.field_quote, out_file);
         }
 
-        if( export_options && export_options->line_suffix && export_options->line_suffix[0] )
+        if( export_options && export_options->line_suffix && export_options->line_suffix[0] ) {
             fprintf( out_file, "%s", export_options->line_suffix );
+        }
         fputs(EOL, out_file);
 
         if (db_seek_next(tab) == DB_FAIL) {
@@ -568,17 +601,21 @@ int export_data(db_t hdb, const char *table_name, const char * file_name, const 
 
 cleanup:
 
-    if (fields)
+    if (fields) {
         free(fields);
+    }
 
-    if (row)
+    if (row) {
         db_free_row( row );
+    }
 
-    if (tab)
+    if (tab) {
         db_close_cursor( tab );
+    }
 
-    if (out_file && out_file != stdout)
+    if (out_file && out_file != stdout) {
         fclose(out_file);
+    }
 
     return rc;
 }

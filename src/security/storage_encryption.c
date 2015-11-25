@@ -37,8 +37,8 @@
 
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 static void
 print_error_message( const char * message, db_cursor_t cursor )
 {
@@ -70,7 +70,7 @@ print_error_message( const char * message, db_cursor_t cursor )
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
 
@@ -79,7 +79,7 @@ example_main(int argc, char **argv)
         = "storage_encryption.ittiadb";
     static const char encryption_key[256 / 8]
         = "32byte_256bit_length_encrypt_key";
-    
+
     db_t hdb;
     db_file_storage_config_t storage_cfg;
     db_auth_info_t auth_info;
@@ -172,10 +172,9 @@ example_main(int argc, char **argv)
 
     rc = EXIT_SUCCESS;
 
-  exit:
+exit:
     db_auth_info_destroy( &auth_info );
     db_file_storage_config_destroy( &storage_cfg );
 
     return rc;
 }
-

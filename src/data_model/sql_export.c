@@ -57,8 +57,8 @@ static int snprintf( char *outBuf, size_t size, const char *format, ... )
 #endif
 
 /**
-* Print an error message for a failed database operation.
-*/
+ * Print an error message for a failed database operation.
+ */
 void
 print_error_message( const char * message, ... )
 {
@@ -89,8 +89,8 @@ print_error_message( const char * message, ... )
 }
 
 /**
-* Execute an SQL statement, checking for errors.
-*/
+ * Execute an SQL statement, checking for errors.
+ */
 static int
 execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t parameters )
 {
@@ -144,7 +144,7 @@ int export_field( db_fielddef_t * fdef )
     case DB_COLTYPE_UINT64_TAG:     fprintf( stdout, "sint64" ); break;
     case DB_COLTYPE_FLOAT32_TAG:    fprintf( stdout, "float32" ); break;
     case DB_COLTYPE_FLOAT64_TAG:    fprintf( stdout, "float64" ); break;
-        // case DB_COLTYPE_FIXED_TAG:      
+    // case DB_COLTYPE_FIXED_TAG:
     case DB_COLTYPE_CURRENCY_TAG:   fprintf( stdout, "currency" ); break;
     case DB_COLTYPE_DATE_TAG:       fprintf( stdout, "date" ); break;
     case DB_COLTYPE_TIME_TAG:       fprintf( stdout, "time" ); break;
@@ -160,9 +160,10 @@ int export_field( db_fielddef_t * fdef )
     case DB_COLTYPE_BLOB_TAG:       fprintf( stdout, "blob" ); break;
     default:
         return EXIT_FAILURE;
-    };
-    if( DB_NOT_NULL && fdef->field_flags )
+    }
+    if( DB_NOT_NULL && fdef->field_flags ) {
         fprintf( stdout, " NOT NULL" );
+    }
 
     return EXIT_SUCCESS;
 }
@@ -191,14 +192,16 @@ export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_expo
         db_indexdef_t * idef = &tdef->indexes[ idx ];
         if( idef->index_mode && DB_PRIMARY_INDEX ) {
             if( filter != ALL_BUT_PKEYS ) {
-                if( POST_DATA == stage )
+                if( POST_DATA == stage ) {
                     fprintf( stdout, "ALTER TABLE %s ADD ", tdef->table_name );
-                if( idef->index_name[0] )
+                }
+                if( idef->index_name[0] ) {
                     fprintf( stdout, "CONSTRAINT %s ", idef->index_name );
+                }
 
                 fprintf( stdout, "PRIMARY KEY ( " );
                 for( fidx = 0; fidx < idef->nfields; ++fidx ) {
-                    if( fidx ) fputs( ", ", stdout );
+                    if( fidx ) {fputs( ", ", stdout ); }
                     fprintf( stdout, "%s", tdef->fields[ idef->fields[fidx].fieldno ].field_name  );
                 }
                 fprintf( stdout, " )%s", stage == POST_DATA ? ";\n" : "" );
@@ -206,7 +209,7 @@ export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_expo
         } else if( ALL_INDEXES == filter || ALL_BUT_PKEYS ) {
             fprintf( stdout, "CREATE INDEX %s ON %s( ", idef->index_name, tdef->table_name );
             for( fidx = 0; fidx < idef->nfields; ++fidx ) {
-                if( fidx ) fputs( ", ", stdout );
+                if( fidx ) {fputs( ", ", stdout ); }
                 fprintf( stdout, "%s", tdef->fields[ idef->fields[fidx].fieldno ].field_name  );
             }
             fprintf( stdout, " );\n" );
@@ -216,8 +219,8 @@ export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_expo
 }
 
 /*
- *  Export table schema & data. 
- *  Export table's data before foreign keys, indexes and primary keys ( except clustered tables ). 
+ *  Export table schema & data.
+ *  Export table's data before foreign keys, indexes and primary keys ( except clustered tables ).
  */
 int
 export_table( db_t hdb, const char * tname, export_stage_t stage )
@@ -225,17 +228,18 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
     int rc = EXIT_FAILURE;
     db_tabledef_t tdef = { DB_ALLOC_INITIALIZER() };
     int fieldno;
-    
+
     if( DB_OK == db_describe_table( hdb, tname, &tdef, DB_DESCRIBE_TABLE_FIELDS | DB_DESCRIBE_TABLE_INDEXES ) ) {
         if( SCHEMA_AND_DATA == stage ) {
             fprintf( stdout, "-- ==== Schema of table %s\n", tname );
-            fprintf( stdout, "CREATE %s TABLE %s (\n", 
+            fprintf( stdout, "CREATE %s TABLE %s (\n",
                      tdef.table_type == DB_TABLETYPE_MEMORY ? "MEMORY" : "", tname
-                );
+                     );
             for( fieldno = 0, rc = 0; fieldno < tdef.nfields && 0 == rc; ++fieldno ) {
                 db_fielddef_t *fdef = &tdef.fields[fieldno];
-                if( fieldno )
+                if( fieldno ) {
                     fputs( ",\n", stdout );
+                }
                 rc = export_field( fdef );
             }
             if( EXIT_SUCCESS == rc ) {
@@ -247,8 +251,9 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
             }
             if( EXIT_SUCCESS == rc && DB_TABLETYPE_MEMORY != tdef.table_type ) {
                 char lprefix[ DB_MAX_OBJECT_NAME + 20 ];
-                snprintf( lprefix, DB_MAX_OBJECT_NAME + 20, "INSERT INTO %s VALUES( ", tdef.table_name );
                 csv_export_options_t opts = { NO_HEADER, TABLE_SOURCE, '\'', lprefix, " );" };
+
+                snprintf( lprefix, DB_MAX_OBJECT_NAME + 20, "INSERT INTO %s VALUES( ", tdef.table_name );
                 rc = export_data( hdb, tname, 0, &opts );
             }
 
@@ -257,9 +262,11 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
             rc = export_indexes( hdb, &tdef, stage, DB_TABLETYPE_CLUSTERED == tdef.table_type ? ALL_BUT_PKEYS : ALL_INDEXES );
         }
 
-    } else 
+    }
+    else {
         print_error_message( NULL, "raised by db_describe_table() on %s table", tname );
-        
+    }
+
     return rc;
 }
 
@@ -279,7 +286,7 @@ export_tables( db_t hdb, export_stage_t stage )
     if( 0 == execute_command( hdb, "select table_name from tables where table_id >= 23", &sql_cursor, NULL ) ) {
         r = db_alloc_row( NULL, 1 );
         dbs_bind_addr( r, 0, DB_VARTYPE_ANSISTR, &tname, DB_ARRAY_DIM(tname), 0 );
-        for( rc = 0, db_seek_first( sql_cursor ); !db_eof( sql_cursor ) && 0 == rc; db_seek_next( sql_cursor ), ++tables ) { 
+        for( rc = 0, db_seek_first( sql_cursor ); !db_eof( sql_cursor ) && 0 == rc; db_seek_next( sql_cursor ), ++tables ) {
             db_fetch( sql_cursor, r, NULL );
             rc = export_table( hdb, tname, stage );
             fputs( "\n", stdout );
@@ -288,7 +295,7 @@ export_tables( db_t hdb, export_stage_t stage )
         db_free_row( r );
         db_close_cursor( sql_cursor );
     }
-    
+
     return rc;
 }
 
@@ -311,27 +318,29 @@ export_sequences( db_t hdb )
         for( db_seek_first( sql_cursor ); !db_eof( sql_cursor ) && 0 == rc; db_seek_next( sql_cursor ), ++sequences ) {
             db_seqdef_t seq_def;
             db_fetch( sql_cursor, r, NULL );
-            if( DB_OK == db_describe_sequence( hdb, sname, &seq_def ) )
-                fprintf( stdout, "CREATE SEQUENCE %s START WITH %"PRId64";\n", sname, seq_def.seq_start.int64 );
+            if( DB_OK == db_describe_sequence( hdb, sname, &seq_def ) ) {
+                fprintf( stdout, "CREATE SEQUENCE %s START WITH %" PRId64 ";\n", sname, seq_def.seq_start.int64 );
+            }
         }
 
         db_free_row( r );
         db_close_cursor( sql_cursor );
         rc = EXIT_SUCCESS;
     }
-    
+
     return rc;
 }
 
 int
-example_main(int argc, char **argv) 
+example_main(int argc, char **argv)
 {
+    int rc = EXIT_FAILURE;
     db_t hdb;
     if( argc < 2 ) {
         fprintf(
             stdout, "Usage:\n"
             " %s <existing ittia database>\n",
-            argv[0]    
+            argv[0]
             );
         return EXIT_FAILURE;
     }
@@ -344,14 +353,13 @@ example_main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    int rc = export_tables( hdb, SCHEMA_AND_DATA )
+    rc = export_tables( hdb, SCHEMA_AND_DATA )
         || export_tables( hdb, POST_DATA )
         || export_sequences( hdb )
-        ;
-    
-    
+    ;
+
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
     return rc;
 }
-

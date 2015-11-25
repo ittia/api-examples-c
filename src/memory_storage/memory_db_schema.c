@@ -40,7 +40,7 @@
  *       - input/output statistics;
  *
  *  Hosts in 'hosts' table related by foreign key from 'connstat' table.
-*/
+ */
 
 #include "dbs_schema.h"
 
@@ -122,7 +122,7 @@ static db_indexdef_t connstat_indexes[] =
       connstat_by_age_idx_fields },              /* fields */
 };
 
-static db_foreign_key_def_t connstat_fkeys[] = 
+static db_foreign_key_def_t connstat_fkeys[] =
 {
     { HOSTID_FKEY_NAME,                         /* fk_name   */
       HOSTS_TABLE,                              /* ref_table */
@@ -138,45 +138,43 @@ static db_foreign_key_def_t connstat_fkeys[] =
               HOSTID_FNO,                       /* org_field    */
               HOSTID_FNO,                       /* ref_field - Field number in the referenced table */
           }
-      }
-    },
+      }},
 };
 
-static db_tabledef_t tables[] = 
+static db_tabledef_t tables[] =
 {
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_MEMORY,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_MEMORY,
         HOSTS_TABLE,
         DB_ARRAY_DIM(hosts_fields),
         hosts_fields,
         DB_ARRAY_DIM(hosts_indexes),   // Indexes array size
-                     hosts_indexes,    // Indexes array
+        hosts_indexes,                 // Indexes array
         0, NULL,
     },
-    { 
-        DB_ALLOC_INITIALIZER(), 
-        DB_TABLETYPE_MEMORY,   
+    {
+        DB_ALLOC_INITIALIZER(),
+        DB_TABLETYPE_MEMORY,
         CONNSTAT_TABLE,
         DB_ARRAY_DIM(connstat_fields),
         connstat_fields,
         DB_ARRAY_DIM(connstat_indexes),   // Indexes array size
-                     connstat_indexes,    // Indexes array
+        connstat_indexes,                 // Indexes array
         DB_ARRAY_DIM(connstat_fkeys),     // FKey array size
-                     connstat_fkeys       // FKeys array
+        connstat_fkeys                    // FKeys array
     },
 };
 
-static db_seqdef_t sequences[] = 
+static db_seqdef_t sequences[] =
 {
     { AGE_SEQUENCE, {{ 1, 0}} },
 };
 
-dbs_schema_def_t db_schema = 
+dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables,
     DB_ARRAY_DIM(sequences),
     sequences
 };
-
