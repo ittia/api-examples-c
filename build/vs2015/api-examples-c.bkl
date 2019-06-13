@@ -1,0 +1,16 @@
+// Main bakefile for the ITTIA DB SQL C API examples.
+
+toolsets = vs2015;
+archs = x86 x86_64;
+
+import ../deps/ittiadb_sdk.bkl;
+import ../../src/common/common.bkl;
+
+submodule application.bkl;
+submodule file_storage.bkl;
+submodule memory_storage.bkl;
+submodule error_handling.bkl;
+submodule data_model.bkl;
+submodule security.bkl;
+submodule shared_access.bkl;
+submodule sql.bkl;

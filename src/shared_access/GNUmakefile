@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/shared_access/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,79 +63,88 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-shared-access ../../$(builddir)/src/shared_access/embedded_database_server_c ../../$(builddir)/src/shared_access/online_backup_c ../../$(builddir)/src/shared_access/data_change_notification_c
+all: builddir-shared-access $(_builddir)embedded_database_server_c $(_builddir)online_backup_c $(_builddir)data_change_notification_c
 
 builddir-shared-access:
-	@mkdir -p ../../$(builddir)/src/shared_access
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/shared_access/embedded_database_server_c: ../../$(builddir)/src/shared_access/embedded_database_server_c_main.o ../../$(builddir)/src/shared_access/embedded_database_server_c_db_main.o ../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_schema.o ../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_error_info.o ../../$(builddir)/src/shared_access/embedded_database_server_c_embedded_database_server.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/shared_access/embedded_database_server_c_main.o ../../$(builddir)/src/shared_access/embedded_database_server_c_db_main.o ../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_schema.o ../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_error_info.o ../../$(builddir)/src/shared_access/embedded_database_server_c_embedded_database_server.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)embedded_database_server_c: $(_builddir)embedded_database_server_c_main.o $(_builddir)embedded_database_server_c_db_main.o $(_builddir)embedded_database_server_c_dbs_sql_line_shell.o $(_builddir)embedded_database_server_c_dbs_schema.o $(_builddir)embedded_database_server_c_dbs_error_info.o $(_builddir)embedded_database_server_c_embedded_database_server.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)embedded_database_server_c_main.o $(_builddir)embedded_database_server_c_db_main.o $(_builddir)embedded_database_server_c_dbs_sql_line_shell.o $(_builddir)embedded_database_server_c_dbs_schema.o $(_builddir)embedded_database_server_c_dbs_error_info.o $(_builddir)embedded_database_server_c_embedded_database_server.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/shared_access/embedded_database_server_c_main.o: ../common/main.c
+$(_builddir)embedded_database_server_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/shared_access/embedded_database_server_c_db_main.o: ../common/db_main.c
+$(_builddir)embedded_database_server_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)embedded_database_server_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)embedded_database_server_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/shared_access/embedded_database_server_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)embedded_database_server_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/shared_access/embedded_database_server_c_embedded_database_server.o: embedded_database_server.c
+$(_builddir)embedded_database_server_c_embedded_database_server.o: embedded_database_server.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples embedded_database_server.c
 
-../../$(builddir)/src/shared_access/online_backup_c: ../../$(builddir)/src/shared_access/online_backup_c_main.o ../../$(builddir)/src/shared_access/online_backup_c_db_main.o ../../$(builddir)/src/shared_access/online_backup_c_dbs_schema.o ../../$(builddir)/src/shared_access/online_backup_c_dbs_error_info.o ../../$(builddir)/src/shared_access/online_backup_c_online_backup.o ../../$(builddir)/src/shared_access/online_backup_c_thread_utils.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/shared_access/online_backup_c_main.o ../../$(builddir)/src/shared_access/online_backup_c_db_main.o ../../$(builddir)/src/shared_access/online_backup_c_dbs_schema.o ../../$(builddir)/src/shared_access/online_backup_c_dbs_error_info.o ../../$(builddir)/src/shared_access/online_backup_c_online_backup.o ../../$(builddir)/src/shared_access/online_backup_c_thread_utils.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)online_backup_c: $(_builddir)online_backup_c_main.o $(_builddir)online_backup_c_db_main.o $(_builddir)online_backup_c_dbs_sql_line_shell.o $(_builddir)online_backup_c_dbs_schema.o $(_builddir)online_backup_c_dbs_error_info.o $(_builddir)online_backup_c_online_backup.o $(_builddir)online_backup_c_thread_utils.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)online_backup_c_main.o $(_builddir)online_backup_c_db_main.o $(_builddir)online_backup_c_dbs_sql_line_shell.o $(_builddir)online_backup_c_dbs_schema.o $(_builddir)online_backup_c_dbs_error_info.o $(_builddir)online_backup_c_online_backup.o $(_builddir)online_backup_c_thread_utils.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/shared_access/online_backup_c_main.o: ../common/main.c
+$(_builddir)online_backup_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/shared_access/online_backup_c_db_main.o: ../common/db_main.c
+$(_builddir)online_backup_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/shared_access/online_backup_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)online_backup_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)online_backup_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/shared_access/online_backup_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)online_backup_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/shared_access/online_backup_c_online_backup.o: online_backup.c
+$(_builddir)online_backup_c_online_backup.o: online_backup.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples online_backup.c
 
-../../$(builddir)/src/shared_access/online_backup_c_thread_utils.o: thread_utils.c
+$(_builddir)online_backup_c_thread_utils.o: thread_utils.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples thread_utils.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c: ../../$(builddir)/src/shared_access/data_change_notification_c_main.o ../../$(builddir)/src/shared_access/data_change_notification_c_db_main.o ../../$(builddir)/src/shared_access/data_change_notification_c_dbs_schema.o ../../$(builddir)/src/shared_access/data_change_notification_c_dbs_error_info.o ../../$(builddir)/src/shared_access/data_change_notification_c_data_change_notification.o ../../$(builddir)/src/shared_access/data_change_notification_c_thread_utils.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/shared_access/data_change_notification_c_main.o ../../$(builddir)/src/shared_access/data_change_notification_c_db_main.o ../../$(builddir)/src/shared_access/data_change_notification_c_dbs_schema.o ../../$(builddir)/src/shared_access/data_change_notification_c_dbs_error_info.o ../../$(builddir)/src/shared_access/data_change_notification_c_data_change_notification.o ../../$(builddir)/src/shared_access/data_change_notification_c_thread_utils.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)data_change_notification_c: $(_builddir)data_change_notification_c_main.o $(_builddir)data_change_notification_c_db_main.o $(_builddir)data_change_notification_c_dbs_sql_line_shell.o $(_builddir)data_change_notification_c_dbs_schema.o $(_builddir)data_change_notification_c_dbs_error_info.o $(_builddir)data_change_notification_c_data_change_notification.o $(_builddir)data_change_notification_c_thread_utils.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)data_change_notification_c_main.o $(_builddir)data_change_notification_c_db_main.o $(_builddir)data_change_notification_c_dbs_sql_line_shell.o $(_builddir)data_change_notification_c_dbs_schema.o $(_builddir)data_change_notification_c_dbs_error_info.o $(_builddir)data_change_notification_c_data_change_notification.o $(_builddir)data_change_notification_c_thread_utils.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/shared_access/data_change_notification_c_main.o: ../common/main.c
+$(_builddir)data_change_notification_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c_db_main.o: ../common/db_main.c
+$(_builddir)data_change_notification_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)data_change_notification_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)data_change_notification_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)data_change_notification_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c_data_change_notification.o: data_change_notification.c
+$(_builddir)data_change_notification_c_data_change_notification.o: data_change_notification.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples data_change_notification.c
 
-../../$(builddir)/src/shared_access/data_change_notification_c_thread_utils.o: thread_utils.c
+$(_builddir)data_change_notification_c_thread_utils.o: thread_utils.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples thread_utils.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/shared_access/embedded_database_server_c
-	rm -f ../../$(builddir)/src/shared_access/online_backup_c
-	rm -f ../../$(builddir)/src/shared_access/data_change_notification_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)embedded_database_server_c
+	rm -f $(_builddir)online_backup_c
+	rm -f $(_builddir)data_change_notification_c
 
 .PHONY: all clean builddir-shared-access
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

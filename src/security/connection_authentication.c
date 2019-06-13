@@ -109,7 +109,7 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 /**
  * Helper function to create DB
  */
-db_t
+static db_t
 create_database(const char* database_name, dbs_schema_def_t *schema, db_storage_config_t * storage_cfg)
 {
     db_t hdb;
@@ -189,7 +189,7 @@ destroy_example_storage_config(
 /*
  *  Mount storage
  */
-int
+static int
 mount_db(
     int32_t mode,
     const db_fname_t * dbname,
@@ -203,8 +203,8 @@ mount_db(
     db_auth_info_t auth_info;               // db_auth_info_t keeps AES parameters
     if( encryption_key ) {
         auth_info.cipher_type = DB_CIPHER_AES256_CTR;       //< Cipher length
-        auth_info.cipher_data = (void *) encryption_key;    //< Encryption key
-        auth_info.cipher_data_size = enc_key_len;           //< Encryption key length (in bytes)
+        auth_info.cipher_data = (const void *)encryption_key;    //< Encryption key
+        auth_info.cipher_data_size = (uint32_t)enc_key_len;           //< Encryption key length (in bytes)
     }
 
     fill_example_storage_config( mode, &storage_config, &auth_info );
@@ -224,7 +224,7 @@ mount_db(
 /*
  *  Open connection and call do_describe_table() to check table 'table' existance and its definition
  */
-int
+static int
 check_conn_to_mounted_db( int32_t mode, const db_fname_t * dbname )
 {
     int rc = EXIT_FAILURE;
@@ -276,8 +276,8 @@ int
 example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
-    db_t file_hdb;      // File-storage db
-    db_t memory_hdb;    // In-mem-storage db
+    db_t file_hdb = NULL;      // File-storage db
+    db_t memory_hdb = NULL;    // In-mem-storage db
 
     char encryption_key[ 256/8 ];  // 256bit encryption key to encrypt DB's data
 

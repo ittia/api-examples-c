@@ -1,4 +1,5 @@
 // Build ITTIA DB SQL from source code.
 
+import ../../../ittiadb/build/bkl/config.bkl;
 import ../../../ittiadb/utils/common/dbsupport.bkl;
 submodule ittiadb.bkl;

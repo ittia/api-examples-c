@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +71,7 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
@@ -95,7 +96,7 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
     return hdb;
 }
 
-int
+static int
 do_transaction_with_savepoint( db_t hdb )
 {
     db_result_t rc = DB_OK;
@@ -156,8 +157,8 @@ do_transaction_with_savepoint( db_t hdb )
     }
     if( db_is_active_tx(hdb) && DB_OK == db_commit_tx( hdb, 0 ) ) {
         fprintf(stdout, "Count of readings (overall/good/bad): (%d/%d/%d). Overall - good - bad: %d\n",
-                DB_ARRAY_DIM( readings ), good_readings, bad_readings,
-                DB_ARRAY_DIM( readings ) - good_readings - bad_readings
+                (int)DB_ARRAY_DIM( readings ), good_readings, bad_readings,
+                (int)DB_ARRAY_DIM( readings ) - good_readings - bad_readings
                 );
     }
 
@@ -181,6 +182,10 @@ example_main(int argc, char **argv)
 
     // Start transactions with savepoints
     rc = do_transaction_with_savepoint( hdb );
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
 exit:

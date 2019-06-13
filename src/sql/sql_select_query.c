@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -229,6 +230,10 @@ example_main(int argc, char **argv)
     }
 
     rc = select_query( hdb );
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
     return rc;

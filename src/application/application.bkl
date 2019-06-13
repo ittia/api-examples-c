@@ -1,0 +1,43 @@
+program performance_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_error_info
+{
+	sources {
+		performance.c
+	}
+}
+
+program phonebook_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		phonebook_c.h
+	}
+
+	sources {
+		phonebook.c
+		phonebook_console.c
+		phonebook_schema.c
+	}
+}
+
+program phonebook_sql_c
+	: api_ittia_db_c
+	, src_examples_common
+	, src_dbs_schema
+	, src_dbs_error_info
+{
+	headers {
+		phonebook_c.h
+	}
+
+	sources {
+		phonebook_sql.c
+		phonebook_console.c
+		phonebook_schema.c
+	}
+}

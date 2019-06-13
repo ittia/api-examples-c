@@ -24,8 +24,9 @@
 #ifndef THREAD_UTILS_INCLUDED
 #define THREAD_UTILS_INCLUDED
 
+#include <ittia/os/os_thread.h>
+
 typedef void (*thread_proc_t)(void*);
-typedef struct os_thread_t os_thread_t;
 
 /* thread flags */
 #define THREAD_JOINABLE 1  /**< #os_thread_join can be used to wait for the

@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -59,7 +60,7 @@ static db_indexfield_t pkey_fields[] =
     { 1 }
 };
 
-db_indexdef_t indexes[] =
+static db_indexdef_t indexes[] =
 {
     { DB_ALLOC_INITIALIZER(),       /* db_alloc */
       DB_INDEXTYPE_DEFAULT,         /* index_type */
@@ -84,7 +85,7 @@ static db_tabledef_t tables[] =
     },
 };
 
-dbs_schema_def_t db_schema =
+static dbs_schema_def_t db_schema =
 {
     DB_ARRAY_DIM(tables),
     tables
@@ -142,7 +143,7 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -178,7 +179,8 @@ typedef struct {
 static mutex_t mutex;
 
 /// Backup thread perform this:
-void backup_proc( backup_args_t * data )
+static void
+backup_proc( backup_args_t * data )
 {
     db_backup_t backup_cfg;
     db_t hdb;
@@ -210,7 +212,8 @@ void backup_proc( backup_args_t * data )
 }
 
 /// Check backed up DB. - Try to open & check table
-int check_backed_up_data(char *dbname)
+static int
+check_backed_up_data(char *dbname)
 {
     int rc = EXIT_FAILURE;
     db_result_t db_rc = DB_OK;
@@ -278,6 +281,10 @@ int check_backed_up_data(char *dbname)
 
     db_close_cursor( c );
     db_free_row( row );
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, dbname, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
     return rc;

@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -71,7 +72,7 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
@@ -97,7 +98,7 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
 }
 
 /** Load packets of readings in DB table. Each packet in personal transaction */
-int
+static int
 load_readings( db_t hdb )
 {
     db_result_t rc = DB_OK;
@@ -220,6 +221,10 @@ example_main(int argc, char **argv)
 
     // Start transactions generation. Part of transactions commit with DB_LAZY_COMPLETION flag to make them to be deffered
     rc = load_readings( hdb );
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
 exit:

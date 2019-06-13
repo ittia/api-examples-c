@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/sql/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,54 +63,60 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-sql ../../$(builddir)/src/sql/sql_select_query_c ../../$(builddir)/src/sql/sql_parameters_c
+all: builddir-sql $(_builddir)sql_select_query_c $(_builddir)sql_parameters_c
 
 builddir-sql:
-	@mkdir -p ../../$(builddir)/src/sql
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/sql/sql_select_query_c: ../../$(builddir)/src/sql/sql_select_query_c_main.o ../../$(builddir)/src/sql/sql_select_query_c_db_main.o ../../$(builddir)/src/sql/sql_select_query_c_dbs_schema.o ../../$(builddir)/src/sql/sql_select_query_c_dbs_error_info.o ../../$(builddir)/src/sql/sql_select_query_c_sql_select_query.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/sql/sql_select_query_c_main.o ../../$(builddir)/src/sql/sql_select_query_c_db_main.o ../../$(builddir)/src/sql/sql_select_query_c_dbs_schema.o ../../$(builddir)/src/sql/sql_select_query_c_dbs_error_info.o ../../$(builddir)/src/sql/sql_select_query_c_sql_select_query.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)sql_select_query_c: $(_builddir)sql_select_query_c_main.o $(_builddir)sql_select_query_c_db_main.o $(_builddir)sql_select_query_c_dbs_sql_line_shell.o $(_builddir)sql_select_query_c_dbs_schema.o $(_builddir)sql_select_query_c_dbs_error_info.o $(_builddir)sql_select_query_c_sql_select_query.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)sql_select_query_c_main.o $(_builddir)sql_select_query_c_db_main.o $(_builddir)sql_select_query_c_dbs_sql_line_shell.o $(_builddir)sql_select_query_c_dbs_schema.o $(_builddir)sql_select_query_c_dbs_error_info.o $(_builddir)sql_select_query_c_sql_select_query.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/sql/sql_select_query_c_main.o: ../common/main.c
+$(_builddir)sql_select_query_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/sql/sql_select_query_c_db_main.o: ../common/db_main.c
+$(_builddir)sql_select_query_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/sql/sql_select_query_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)sql_select_query_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)sql_select_query_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/sql/sql_select_query_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)sql_select_query_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/sql/sql_select_query_c_sql_select_query.o: sql_select_query.c
+$(_builddir)sql_select_query_c_sql_select_query.o: sql_select_query.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples sql_select_query.c
 
-../../$(builddir)/src/sql/sql_parameters_c: ../../$(builddir)/src/sql/sql_parameters_c_main.o ../../$(builddir)/src/sql/sql_parameters_c_db_main.o ../../$(builddir)/src/sql/sql_parameters_c_dbs_schema.o ../../$(builddir)/src/sql/sql_parameters_c_dbs_error_info.o ../../$(builddir)/src/sql/sql_parameters_c_sql_parameters.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/sql/sql_parameters_c_main.o ../../$(builddir)/src/sql/sql_parameters_c_db_main.o ../../$(builddir)/src/sql/sql_parameters_c_dbs_schema.o ../../$(builddir)/src/sql/sql_parameters_c_dbs_error_info.o ../../$(builddir)/src/sql/sql_parameters_c_sql_parameters.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)sql_parameters_c: $(_builddir)sql_parameters_c_main.o $(_builddir)sql_parameters_c_db_main.o $(_builddir)sql_parameters_c_dbs_sql_line_shell.o $(_builddir)sql_parameters_c_dbs_schema.o $(_builddir)sql_parameters_c_dbs_error_info.o $(_builddir)sql_parameters_c_sql_parameters.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)sql_parameters_c_main.o $(_builddir)sql_parameters_c_db_main.o $(_builddir)sql_parameters_c_dbs_sql_line_shell.o $(_builddir)sql_parameters_c_dbs_schema.o $(_builddir)sql_parameters_c_dbs_error_info.o $(_builddir)sql_parameters_c_sql_parameters.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/sql/sql_parameters_c_main.o: ../common/main.c
+$(_builddir)sql_parameters_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/sql/sql_parameters_c_db_main.o: ../common/db_main.c
+$(_builddir)sql_parameters_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/sql/sql_parameters_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)sql_parameters_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)sql_parameters_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/sql/sql_parameters_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)sql_parameters_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/sql/sql_parameters_c_sql_parameters.o: sql_parameters.c
+$(_builddir)sql_parameters_c_sql_parameters.o: sql_parameters.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples sql_parameters.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/sql/sql_select_query_c
-	rm -f ../../$(builddir)/src/sql/sql_parameters_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)sql_select_query_c
+	rm -f $(_builddir)sql_parameters_c
 
 .PHONY: all clean builddir-sql
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

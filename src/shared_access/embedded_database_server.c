@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,7 +70,7 @@ static db_tabledef_t table_t = {
     0, NULL,
 };
 
-dbs_schema_def_t db_schema =
+static dbs_schema_def_t db_schema =
 {
     1,
     &table_t
@@ -118,7 +119,7 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 /**
  * Helper function to create DB
  */
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -186,13 +187,8 @@ example_main( int argc, char **argv )
              * while it is shared with other processes by the server. */
             hdb = db_open_file_storage( DB_FILENAME, NULL );
 
-            /* Exit after the timer has elapsed. */
-            /* Replace this with a real event loop and exit condition. */
-            while ( seconds_to_work-- ) {
-                os_sleep( WAIT_MILLISEC( 1000 ) );
-                fputc( '.', stdout );
-            }
-            fputc( '\n', stdout );
+            printf("Enter SQL statements or an empty line to exit\n");
+            dbs_sql_line_shell(hdb, DB_FILENAME, stdin, stdout, stderr);
 
             db_server_stop( 0 );
 

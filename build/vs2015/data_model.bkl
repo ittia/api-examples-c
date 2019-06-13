@@ -1,0 +1,2 @@
+srcdir data_model;
+import ../../src/data_model/data_model.bkl;

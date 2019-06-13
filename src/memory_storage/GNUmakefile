@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/memory_storage/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,82 +63,91 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-memory-storage ../../$(builddir)/src/memory_storage/full_memory_storage_c ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c ../../$(builddir)/src/memory_storage/memory_storage_embedded_server
+all: builddir-memory-storage $(_builddir)memory_storage_capacity_c $(_builddir)memory_disk_hybrid_c $(_builddir)memory_storage_embedded_server_c
 
 builddir-memory-storage:
-	@mkdir -p ../../$(builddir)/src/memory_storage
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c: ../../$(builddir)/src/memory_storage/full_memory_storage_c_main.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_db_main.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_schema.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_error_info.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_full_memory_storage.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_memory_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/memory_storage/full_memory_storage_c_main.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_db_main.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_schema.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_error_info.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_full_memory_storage.o ../../$(builddir)/src/memory_storage/full_memory_storage_c_memory_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)memory_storage_capacity_c: $(_builddir)memory_storage_capacity_c_main.o $(_builddir)memory_storage_capacity_c_db_main.o $(_builddir)memory_storage_capacity_c_dbs_sql_line_shell.o $(_builddir)memory_storage_capacity_c_dbs_schema.o $(_builddir)memory_storage_capacity_c_dbs_error_info.o $(_builddir)memory_storage_capacity_c_memory_storage_capacity.o $(_builddir)memory_storage_capacity_c_memory_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)memory_storage_capacity_c_main.o $(_builddir)memory_storage_capacity_c_db_main.o $(_builddir)memory_storage_capacity_c_dbs_sql_line_shell.o $(_builddir)memory_storage_capacity_c_dbs_schema.o $(_builddir)memory_storage_capacity_c_dbs_error_info.o $(_builddir)memory_storage_capacity_c_memory_storage_capacity.o $(_builddir)memory_storage_capacity_c_memory_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_main.o: ../common/main.c
+$(_builddir)memory_storage_capacity_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_db_main.o: ../common/db_main.c
+$(_builddir)memory_storage_capacity_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)memory_storage_capacity_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)memory_storage_capacity_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)memory_storage_capacity_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_full_memory_storage.o: full_memory_storage.c
-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples full_memory_storage.c
+$(_builddir)memory_storage_capacity_c_memory_storage_capacity.o: memory_storage_capacity.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples memory_storage_capacity.c
 
-../../$(builddir)/src/memory_storage/full_memory_storage_c_memory_db_schema.o: memory_db_schema.c
+$(_builddir)memory_storage_capacity_c_memory_db_schema.o: memory_db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples memory_db_schema.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c: ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_main.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_db_main.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_schema.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_error_info.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_disk_hybrid.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_db_schema.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_disk_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_main.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_db_main.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_schema.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_error_info.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_disk_hybrid.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_db_schema.o ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_disk_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)memory_disk_hybrid_c: $(_builddir)memory_disk_hybrid_c_main.o $(_builddir)memory_disk_hybrid_c_db_main.o $(_builddir)memory_disk_hybrid_c_dbs_sql_line_shell.o $(_builddir)memory_disk_hybrid_c_dbs_schema.o $(_builddir)memory_disk_hybrid_c_dbs_error_info.o $(_builddir)memory_disk_hybrid_c_memory_disk_hybrid.o $(_builddir)memory_disk_hybrid_c_memory_db_schema.o $(_builddir)memory_disk_hybrid_c_disk_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)memory_disk_hybrid_c_main.o $(_builddir)memory_disk_hybrid_c_db_main.o $(_builddir)memory_disk_hybrid_c_dbs_sql_line_shell.o $(_builddir)memory_disk_hybrid_c_dbs_schema.o $(_builddir)memory_disk_hybrid_c_dbs_error_info.o $(_builddir)memory_disk_hybrid_c_memory_disk_hybrid.o $(_builddir)memory_disk_hybrid_c_memory_db_schema.o $(_builddir)memory_disk_hybrid_c_disk_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_main.o: ../common/main.c
+$(_builddir)memory_disk_hybrid_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_db_main.o: ../common/db_main.c
+$(_builddir)memory_disk_hybrid_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)memory_disk_hybrid_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)memory_disk_hybrid_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)memory_disk_hybrid_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_disk_hybrid.o: memory_disk_hybrid.c
+$(_builddir)memory_disk_hybrid_c_memory_disk_hybrid.o: memory_disk_hybrid.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples memory_disk_hybrid.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_memory_db_schema.o: memory_db_schema.c
+$(_builddir)memory_disk_hybrid_c_memory_db_schema.o: memory_db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples memory_db_schema.c
 
-../../$(builddir)/src/memory_storage/memory_disk_hybrid_c_disk_db_schema.o: disk_db_schema.c
+$(_builddir)memory_disk_hybrid_c_disk_db_schema.o: disk_db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples disk_db_schema.c
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server: ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_main.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_db_main.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_schema.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_error_info.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_memory_storage_embedded_server.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_main.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_db_main.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_schema.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_error_info.o ../../$(builddir)/src/memory_storage/memory_storage_embedded_server_memory_storage_embedded_server.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)memory_storage_embedded_server_c: $(_builddir)memory_storage_embedded_server_c_main.o $(_builddir)memory_storage_embedded_server_c_db_main.o $(_builddir)memory_storage_embedded_server_c_dbs_sql_line_shell.o $(_builddir)memory_storage_embedded_server_c_dbs_schema.o $(_builddir)memory_storage_embedded_server_c_dbs_error_info.o $(_builddir)memory_storage_embedded_server_c_memory_storage_embedded_server.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)memory_storage_embedded_server_c_main.o $(_builddir)memory_storage_embedded_server_c_db_main.o $(_builddir)memory_storage_embedded_server_c_dbs_sql_line_shell.o $(_builddir)memory_storage_embedded_server_c_dbs_schema.o $(_builddir)memory_storage_embedded_server_c_dbs_error_info.o $(_builddir)memory_storage_embedded_server_c_memory_storage_embedded_server.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server_main.o: ../common/main.c
+$(_builddir)memory_storage_embedded_server_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server_db_main.o: ../common/db_main.c
+$(_builddir)memory_storage_embedded_server_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)memory_storage_embedded_server_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)memory_storage_embedded_server_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)memory_storage_embedded_server_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/memory_storage/memory_storage_embedded_server_memory_storage_embedded_server.o: memory_storage_embedded_server.c
+$(_builddir)memory_storage_embedded_server_c_memory_storage_embedded_server.o: memory_storage_embedded_server.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples memory_storage_embedded_server.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/memory_storage/full_memory_storage_c
-	rm -f ../../$(builddir)/src/memory_storage/memory_disk_hybrid_c
-	rm -f ../../$(builddir)/src/memory_storage/memory_storage_embedded_server
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)memory_storage_capacity_c
+	rm -f $(_builddir)memory_disk_hybrid_c
+	rm -f $(_builddir)memory_storage_embedded_server_c
 
 .PHONY: all clean builddir-memory-storage
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

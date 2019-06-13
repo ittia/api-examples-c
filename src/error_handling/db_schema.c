@@ -39,7 +39,7 @@ static db_indexfield_t pkey_fields[] =
     { SENSORID_FNO }, { TIMEPOINT_FNO }
 };
 
-db_indexdef_t indexes[] =
+static db_indexdef_t indexes[] =
 {
     { DB_ALLOC_INITIALIZER(),     /* db_alloc */
       DB_INDEXTYPE_DEFAULT,       /* index_type */

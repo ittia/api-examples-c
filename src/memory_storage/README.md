@@ -16,3 +16,7 @@ The Memory Storage Capacity example uses ITTIA DB SQL memory tables to simulate 
 The Memory-Disk Hybrid database example stores persistent and temporary data together in a hybrid ITTIA DB SQL database. Memory tables must be repopulated when the database is reopened, while disk tables are preserved. This example demonstrates:
 
  - Creating a hybrid storage with disk and memory tables.
+
+# memory_storage_embedded_server
+
+The Memory Storage Embedded Sever example shows how to start an in-memory database server in the background of an application.

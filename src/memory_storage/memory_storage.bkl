@@ -3,7 +3,7 @@ action builddir-memory-storage {
 	commands = "mkdir -p $(builddir)";
 }
 
-program full_memory_storage_c
+program memory_storage_capacity_c
 	: api_ittia_db_c
 	, src_examples_common
 	, src_dbs_schema
@@ -13,7 +13,7 @@ program full_memory_storage_c
 		memory_db_schema.h
 	}
 	sources { 
-		full_memory_storage.c 
+		memory_storage_capacity.c
 		memory_db_schema.c
 	}
 }
@@ -30,14 +30,14 @@ program memory_disk_hybrid_c
 		disk_db_schema.h
 	}
 	sources { 
-		memory_disk_hybrid.c 
+		memory_disk_hybrid.c
 		memory_db_schema.c
 		disk_db_schema.c
 	}
 }
 
 
-program memory_storage_embedded_server
+program memory_storage_embedded_server_c
 	: api_ittia_db_c
 	, src_examples_common
 	, src_dbs_schema

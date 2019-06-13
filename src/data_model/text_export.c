@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,7 +74,7 @@ print_error_message( const char * message, ... )
     va_end( va );
 }
 
-int
+static int
 populate_data( db_t hdb )
 {
     db_result_t rc = DB_OK;
@@ -133,7 +134,7 @@ populate_data( db_t hdb )
     return DB_OK == rc ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -167,6 +168,11 @@ example_main(int argc, char **argv)
         if ( EXIT_SUCCESS == rc ) {
             rc = export_data( hdb, STORAGE_TABLE, 0, 0 );
         }
+
+        printf("Enter SQL statements or an empty line to exit\n");
+        dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
+        db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
     }
 
     return rc;

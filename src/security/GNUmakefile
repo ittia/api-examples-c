@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/security/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,54 +63,60 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-security ../../$(builddir)/src/security/storage_encryption_c ../../$(builddir)/src/security/connection_authentication_c
+all: builddir-security $(_builddir)storage_encryption_c $(_builddir)connection_authentication_c
 
 builddir-security:
-	@mkdir -p ../../$(builddir)/src/security
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/security/storage_encryption_c: ../../$(builddir)/src/security/storage_encryption_c_main.o ../../$(builddir)/src/security/storage_encryption_c_db_main.o ../../$(builddir)/src/security/storage_encryption_c_dbs_schema.o ../../$(builddir)/src/security/storage_encryption_c_dbs_error_info.o ../../$(builddir)/src/security/storage_encryption_c_storage_encryption.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/security/storage_encryption_c_main.o ../../$(builddir)/src/security/storage_encryption_c_db_main.o ../../$(builddir)/src/security/storage_encryption_c_dbs_schema.o ../../$(builddir)/src/security/storage_encryption_c_dbs_error_info.o ../../$(builddir)/src/security/storage_encryption_c_storage_encryption.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)storage_encryption_c: $(_builddir)storage_encryption_c_main.o $(_builddir)storage_encryption_c_db_main.o $(_builddir)storage_encryption_c_dbs_sql_line_shell.o $(_builddir)storage_encryption_c_dbs_schema.o $(_builddir)storage_encryption_c_dbs_error_info.o $(_builddir)storage_encryption_c_storage_encryption.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)storage_encryption_c_main.o $(_builddir)storage_encryption_c_db_main.o $(_builddir)storage_encryption_c_dbs_sql_line_shell.o $(_builddir)storage_encryption_c_dbs_schema.o $(_builddir)storage_encryption_c_dbs_error_info.o $(_builddir)storage_encryption_c_storage_encryption.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/security/storage_encryption_c_main.o: ../common/main.c
+$(_builddir)storage_encryption_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/security/storage_encryption_c_db_main.o: ../common/db_main.c
+$(_builddir)storage_encryption_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/security/storage_encryption_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)storage_encryption_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)storage_encryption_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/security/storage_encryption_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)storage_encryption_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/security/storage_encryption_c_storage_encryption.o: storage_encryption.c
+$(_builddir)storage_encryption_c_storage_encryption.o: storage_encryption.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples storage_encryption.c
 
-../../$(builddir)/src/security/connection_authentication_c: ../../$(builddir)/src/security/connection_authentication_c_main.o ../../$(builddir)/src/security/connection_authentication_c_db_main.o ../../$(builddir)/src/security/connection_authentication_c_dbs_schema.o ../../$(builddir)/src/security/connection_authentication_c_dbs_error_info.o ../../$(builddir)/src/security/connection_authentication_c_connection_authentication.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/security/connection_authentication_c_main.o ../../$(builddir)/src/security/connection_authentication_c_db_main.o ../../$(builddir)/src/security/connection_authentication_c_dbs_schema.o ../../$(builddir)/src/security/connection_authentication_c_dbs_error_info.o ../../$(builddir)/src/security/connection_authentication_c_connection_authentication.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)connection_authentication_c: $(_builddir)connection_authentication_c_main.o $(_builddir)connection_authentication_c_db_main.o $(_builddir)connection_authentication_c_dbs_sql_line_shell.o $(_builddir)connection_authentication_c_dbs_schema.o $(_builddir)connection_authentication_c_dbs_error_info.o $(_builddir)connection_authentication_c_connection_authentication.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)connection_authentication_c_main.o $(_builddir)connection_authentication_c_db_main.o $(_builddir)connection_authentication_c_dbs_sql_line_shell.o $(_builddir)connection_authentication_c_dbs_schema.o $(_builddir)connection_authentication_c_dbs_error_info.o $(_builddir)connection_authentication_c_connection_authentication.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/security/connection_authentication_c_main.o: ../common/main.c
+$(_builddir)connection_authentication_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/security/connection_authentication_c_db_main.o: ../common/db_main.c
+$(_builddir)connection_authentication_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/security/connection_authentication_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)connection_authentication_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)connection_authentication_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/security/connection_authentication_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)connection_authentication_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/security/connection_authentication_c_connection_authentication.o: connection_authentication.c
+$(_builddir)connection_authentication_c_connection_authentication.o: connection_authentication.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples connection_authentication.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/security/storage_encryption_c
-	rm -f ../../$(builddir)/src/security/connection_authentication_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)storage_encryption_c
+	rm -f $(_builddir)connection_authentication_c
 
 .PHONY: all clean builddir-security
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

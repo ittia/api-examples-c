@@ -1,4 +1,4 @@
 toolsets = gnu;
 
 import build/deps/ittiadb_sdk.bkl;
-import src/src.bkl;
+import src/console_examples_c.bkl;

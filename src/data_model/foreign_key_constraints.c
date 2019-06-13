@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +71,7 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
@@ -95,7 +96,7 @@ create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_c
     return hdb;
 }
 
-int
+static int
 load_table(
     db_t hdb, const char *table_name, void * data, size_t data_size, size_t data_count, const db_bind_t *binds, size_t binds_count
     )
@@ -138,7 +139,7 @@ load_table(
     return EXIT_FAILURE;
 }
 
-int
+static int
 load_data( db_t hdb )
 {
     barcodes_db_row_t bcodes[] = {
@@ -173,7 +174,7 @@ load_data( db_t hdb )
     return rc;
 }
 
-int
+static int
 do_fkey_changes( db_t hdb )
 {
     int rc = EXIT_FAILURE;
@@ -258,6 +259,10 @@ example_main(int argc, char **argv)
         // Start transactions generation. Part of transactions commit with DB_LAZY_COMPLETION flag to make them to be deffered
         rc = do_fkey_changes( hdb );
     }
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
 exit:

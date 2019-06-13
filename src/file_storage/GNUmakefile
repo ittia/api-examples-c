@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/file_storage/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,82 +63,91 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-file-storage ../../$(builddir)/src/file_storage/atomic_file_storage_c ../../$(builddir)/src/file_storage/bulk_import_c ../../$(builddir)/src/file_storage/background_commit_c
+all: builddir-file-storage $(_builddir)atomic_file_storage_c $(_builddir)bulk_import_c $(_builddir)background_commit_c
 
 builddir-file-storage:
-	@mkdir -p ../../$(builddir)/src/file_storage
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c: ../../$(builddir)/src/file_storage/atomic_file_storage_c_main.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_db_main.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_schema.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_error_info.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_atomic_file_storage.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/file_storage/atomic_file_storage_c_main.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_db_main.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_schema.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_error_info.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_atomic_file_storage.o ../../$(builddir)/src/file_storage/atomic_file_storage_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)atomic_file_storage_c: $(_builddir)atomic_file_storage_c_main.o $(_builddir)atomic_file_storage_c_db_main.o $(_builddir)atomic_file_storage_c_dbs_sql_line_shell.o $(_builddir)atomic_file_storage_c_dbs_schema.o $(_builddir)atomic_file_storage_c_dbs_error_info.o $(_builddir)atomic_file_storage_c_atomic_file_storage.o $(_builddir)atomic_file_storage_c_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)atomic_file_storage_c_main.o $(_builddir)atomic_file_storage_c_db_main.o $(_builddir)atomic_file_storage_c_dbs_sql_line_shell.o $(_builddir)atomic_file_storage_c_dbs_schema.o $(_builddir)atomic_file_storage_c_dbs_error_info.o $(_builddir)atomic_file_storage_c_atomic_file_storage.o $(_builddir)atomic_file_storage_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_main.o: ../common/main.c
+$(_builddir)atomic_file_storage_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_db_main.o: ../common/db_main.c
+$(_builddir)atomic_file_storage_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)atomic_file_storage_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)atomic_file_storage_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)atomic_file_storage_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_atomic_file_storage.o: atomic_file_storage.c
+$(_builddir)atomic_file_storage_c_atomic_file_storage.o: atomic_file_storage.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples atomic_file_storage.c
 
-../../$(builddir)/src/file_storage/atomic_file_storage_c_db_schema.o: db_schema.c
+$(_builddir)atomic_file_storage_c_db_schema.o: db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples db_schema.c
 
-../../$(builddir)/src/file_storage/bulk_import_c: ../../$(builddir)/src/file_storage/bulk_import_c_main.o ../../$(builddir)/src/file_storage/bulk_import_c_db_main.o ../../$(builddir)/src/file_storage/bulk_import_c_dbs_schema.o ../../$(builddir)/src/file_storage/bulk_import_c_dbs_error_info.o ../../$(builddir)/src/file_storage/bulk_import_c_bulk_import.o ../../$(builddir)/src/file_storage/bulk_import_c_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/file_storage/bulk_import_c_main.o ../../$(builddir)/src/file_storage/bulk_import_c_db_main.o ../../$(builddir)/src/file_storage/bulk_import_c_dbs_schema.o ../../$(builddir)/src/file_storage/bulk_import_c_dbs_error_info.o ../../$(builddir)/src/file_storage/bulk_import_c_bulk_import.o ../../$(builddir)/src/file_storage/bulk_import_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)bulk_import_c: $(_builddir)bulk_import_c_main.o $(_builddir)bulk_import_c_db_main.o $(_builddir)bulk_import_c_dbs_sql_line_shell.o $(_builddir)bulk_import_c_dbs_schema.o $(_builddir)bulk_import_c_dbs_error_info.o $(_builddir)bulk_import_c_bulk_import.o $(_builddir)bulk_import_c_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)bulk_import_c_main.o $(_builddir)bulk_import_c_db_main.o $(_builddir)bulk_import_c_dbs_sql_line_shell.o $(_builddir)bulk_import_c_dbs_schema.o $(_builddir)bulk_import_c_dbs_error_info.o $(_builddir)bulk_import_c_bulk_import.o $(_builddir)bulk_import_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/file_storage/bulk_import_c_main.o: ../common/main.c
+$(_builddir)bulk_import_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/file_storage/bulk_import_c_db_main.o: ../common/db_main.c
+$(_builddir)bulk_import_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/file_storage/bulk_import_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)bulk_import_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)bulk_import_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/file_storage/bulk_import_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)bulk_import_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/file_storage/bulk_import_c_bulk_import.o: bulk_import.c
+$(_builddir)bulk_import_c_bulk_import.o: bulk_import.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples bulk_import.c
 
-../../$(builddir)/src/file_storage/bulk_import_c_db_schema.o: db_schema.c
+$(_builddir)bulk_import_c_db_schema.o: db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples db_schema.c
 
-../../$(builddir)/src/file_storage/background_commit_c: ../../$(builddir)/src/file_storage/background_commit_c_main.o ../../$(builddir)/src/file_storage/background_commit_c_db_main.o ../../$(builddir)/src/file_storage/background_commit_c_dbs_schema.o ../../$(builddir)/src/file_storage/background_commit_c_dbs_error_info.o ../../$(builddir)/src/file_storage/background_commit_c_background_commit.o ../../$(builddir)/src/file_storage/background_commit_c_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/file_storage/background_commit_c_main.o ../../$(builddir)/src/file_storage/background_commit_c_db_main.o ../../$(builddir)/src/file_storage/background_commit_c_dbs_schema.o ../../$(builddir)/src/file_storage/background_commit_c_dbs_error_info.o ../../$(builddir)/src/file_storage/background_commit_c_background_commit.o ../../$(builddir)/src/file_storage/background_commit_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)background_commit_c: $(_builddir)background_commit_c_main.o $(_builddir)background_commit_c_db_main.o $(_builddir)background_commit_c_dbs_sql_line_shell.o $(_builddir)background_commit_c_dbs_schema.o $(_builddir)background_commit_c_dbs_error_info.o $(_builddir)background_commit_c_background_commit.o $(_builddir)background_commit_c_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)background_commit_c_main.o $(_builddir)background_commit_c_db_main.o $(_builddir)background_commit_c_dbs_sql_line_shell.o $(_builddir)background_commit_c_dbs_schema.o $(_builddir)background_commit_c_dbs_error_info.o $(_builddir)background_commit_c_background_commit.o $(_builddir)background_commit_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/file_storage/background_commit_c_main.o: ../common/main.c
+$(_builddir)background_commit_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/file_storage/background_commit_c_db_main.o: ../common/db_main.c
+$(_builddir)background_commit_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/file_storage/background_commit_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)background_commit_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)background_commit_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/file_storage/background_commit_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)background_commit_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/file_storage/background_commit_c_background_commit.o: background_commit.c
+$(_builddir)background_commit_c_background_commit.o: background_commit.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples background_commit.c
 
-../../$(builddir)/src/file_storage/background_commit_c_db_schema.o: db_schema.c
+$(_builddir)background_commit_c_db_schema.o: db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples db_schema.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/file_storage/atomic_file_storage_c
-	rm -f ../../$(builddir)/src/file_storage/bulk_import_c
-	rm -f ../../$(builddir)/src/file_storage/background_commit_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)atomic_file_storage_c
+	rm -f $(_builddir)bulk_import_c
+	rm -f $(_builddir)background_commit_c
 
 .PHONY: all clean builddir-file-storage
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

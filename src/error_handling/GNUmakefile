@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/error_handling/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,60 +63,66 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-error-handling ../../$(builddir)/src/error_handling/transaction_rollback_c ../../$(builddir)/src/error_handling/savepoint_rollback_c
+all: builddir-error-handling $(_builddir)transaction_rollback_c $(_builddir)savepoint_rollback_c
 
 builddir-error-handling:
-	@mkdir -p ../../$(builddir)/src/error_handling
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/error_handling/transaction_rollback_c: ../../$(builddir)/src/error_handling/transaction_rollback_c_main.o ../../$(builddir)/src/error_handling/transaction_rollback_c_db_main.o ../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_schema.o ../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_error_info.o ../../$(builddir)/src/error_handling/transaction_rollback_c_transaction_rollback.o ../../$(builddir)/src/error_handling/transaction_rollback_c_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/error_handling/transaction_rollback_c_main.o ../../$(builddir)/src/error_handling/transaction_rollback_c_db_main.o ../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_schema.o ../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_error_info.o ../../$(builddir)/src/error_handling/transaction_rollback_c_transaction_rollback.o ../../$(builddir)/src/error_handling/transaction_rollback_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)transaction_rollback_c: $(_builddir)transaction_rollback_c_main.o $(_builddir)transaction_rollback_c_db_main.o $(_builddir)transaction_rollback_c_dbs_sql_line_shell.o $(_builddir)transaction_rollback_c_dbs_schema.o $(_builddir)transaction_rollback_c_dbs_error_info.o $(_builddir)transaction_rollback_c_transaction_rollback.o $(_builddir)transaction_rollback_c_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)transaction_rollback_c_main.o $(_builddir)transaction_rollback_c_db_main.o $(_builddir)transaction_rollback_c_dbs_sql_line_shell.o $(_builddir)transaction_rollback_c_dbs_schema.o $(_builddir)transaction_rollback_c_dbs_error_info.o $(_builddir)transaction_rollback_c_transaction_rollback.o $(_builddir)transaction_rollback_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_main.o: ../common/main.c
+$(_builddir)transaction_rollback_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_db_main.o: ../common/db_main.c
+$(_builddir)transaction_rollback_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)transaction_rollback_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)transaction_rollback_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)transaction_rollback_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_transaction_rollback.o: transaction_rollback.c
+$(_builddir)transaction_rollback_c_transaction_rollback.o: transaction_rollback.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples transaction_rollback.c
 
-../../$(builddir)/src/error_handling/transaction_rollback_c_db_schema.o: db_schema.c
+$(_builddir)transaction_rollback_c_db_schema.o: db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples db_schema.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c: ../../$(builddir)/src/error_handling/savepoint_rollback_c_main.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_db_main.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_schema.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_error_info.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_savepoint_rollback.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/error_handling/savepoint_rollback_c_main.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_db_main.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_schema.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_error_info.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_savepoint_rollback.o ../../$(builddir)/src/error_handling/savepoint_rollback_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)savepoint_rollback_c: $(_builddir)savepoint_rollback_c_main.o $(_builddir)savepoint_rollback_c_db_main.o $(_builddir)savepoint_rollback_c_dbs_sql_line_shell.o $(_builddir)savepoint_rollback_c_dbs_schema.o $(_builddir)savepoint_rollback_c_dbs_error_info.o $(_builddir)savepoint_rollback_c_savepoint_rollback.o $(_builddir)savepoint_rollback_c_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)savepoint_rollback_c_main.o $(_builddir)savepoint_rollback_c_db_main.o $(_builddir)savepoint_rollback_c_dbs_sql_line_shell.o $(_builddir)savepoint_rollback_c_dbs_schema.o $(_builddir)savepoint_rollback_c_dbs_error_info.o $(_builddir)savepoint_rollback_c_savepoint_rollback.o $(_builddir)savepoint_rollback_c_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_main.o: ../common/main.c
+$(_builddir)savepoint_rollback_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_db_main.o: ../common/db_main.c
+$(_builddir)savepoint_rollback_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)savepoint_rollback_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)savepoint_rollback_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)savepoint_rollback_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_savepoint_rollback.o: savepoint_rollback.c
+$(_builddir)savepoint_rollback_c_savepoint_rollback.o: savepoint_rollback.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples savepoint_rollback.c
 
-../../$(builddir)/src/error_handling/savepoint_rollback_c_db_schema.o: db_schema.c
+$(_builddir)savepoint_rollback_c_db_schema.o: db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples db_schema.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/error_handling/transaction_rollback_c
-	rm -f ../../$(builddir)/src/error_handling/savepoint_rollback_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)transaction_rollback_c
+	rm -f $(_builddir)savepoint_rollback_c
 
 .PHONY: all clean builddir-error-handling
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d

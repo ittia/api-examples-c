@@ -99,18 +99,18 @@ execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t param
     sql_c = db_prepare_sql_cursor( hdb, stmt, 0 );
 
     if ( NULL == sql_c ) {
-        print_error_message( NULL, "prepare SQL failed" );
+        print_error_message( "prepare SQL failed" );
         return EXIT_FAILURE;
     }
 
     if ( !db_is_prepared( sql_c ) ) {
-        print_error_message( sql_c, "prepare SQL failed" );
+        print_error_message( "prepare SQL failed" );
         db_close_cursor( sql_c );
         return EXIT_FAILURE;
     }
 
     if ( db_execute( sql_c, parameters, NULL ) != DB_OK ) {
-        print_error_message( sql_c, "execute SQL failed" );
+        print_error_message( "execute SQL failed" );
         db_close_cursor( sql_c );
         return EXIT_FAILURE;
     }
@@ -129,7 +129,8 @@ execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t param
 /*
  *  Export field definition
  */
-int export_field( db_fielddef_t * fdef )
+static int
+export_field( db_fielddef_t * fdef )
 {
     fprintf( stdout, "\t%s\t", fdef->field_name );
 
@@ -150,13 +151,13 @@ int export_field( db_fielddef_t * fdef )
     case DB_COLTYPE_TIME_TAG:       fprintf( stdout, "time" ); break;
     case DB_COLTYPE_DATETIME_TAG:   fprintf( stdout, "datetime" ); break;
     case DB_COLTYPE_TIMESTAMP_TAG:  fprintf( stdout, "timestamp" ); break;
-    case DB_COLTYPE_ANSISTR_TAG:    fprintf( stdout, "ansistr(%d)", fdef->field_size ); break;
+    case DB_COLTYPE_ANSISTR_TAG:    fprintf( stdout, "ansistr(%d)", (int)fdef->field_size ); break;
 #ifndef DB_EXCLUDE_UNICODE
-    case DB_COLTYPE_UTF8STR_TAG:    fprintf( stdout, "utf8str(%d)", fdef->field_size ); break;
-    case DB_COLTYPE_UTF16STR_TAG:   fprintf( stdout, "utf16str(%d)", fdef->field_size ); break;
-    case DB_COLTYPE_UTF32STR_TAG:   fprintf( stdout, "utf32str(%d)", fdef->field_size ); break;
+    case DB_COLTYPE_UTF8STR_TAG:    fprintf( stdout, "utf8str(%d)", (int)fdef->field_size ); break;
+    case DB_COLTYPE_UTF16STR_TAG:   fprintf( stdout, "utf16str(%d)", (int)fdef->field_size ); break;
+    case DB_COLTYPE_UTF32STR_TAG:   fprintf( stdout, "utf32str(%d)", (int)fdef->field_size ); break;
 #endif
-    case DB_COLTYPE_BINARY_TAG:     fprintf( stdout, "varbinary(%d)", fdef->field_size ); break;
+    case DB_COLTYPE_BINARY_TAG:     fprintf( stdout, "varbinary(%d)", (int)fdef->field_size ); break;
     case DB_COLTYPE_BLOB_TAG:       fprintf( stdout, "blob" ); break;
     default:
         return EXIT_FAILURE;
@@ -182,15 +183,15 @@ typedef enum {
 /*
  *  Export indexes
  */
-int
-export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_export_filter_t filter )
+static int
+export_indexes( db_tabledef_t * tdef, export_stage_t stage, index_export_filter_t filter )
 {
     int rc = EXIT_SUCCESS;
     int idx;
     int fidx;
     for( idx = 0; idx < tdef->nindexes; ++idx ) {
         db_indexdef_t * idef = &tdef->indexes[ idx ];
-        if( idef->index_mode && DB_PRIMARY_INDEX ) {
+        if( (idef->index_mode & DB_PRIMARY_INDEX) != 0 ) {
             if( filter != ALL_BUT_PKEYS ) {
                 if( POST_DATA == stage ) {
                     fprintf( stdout, "ALTER TABLE %s ADD ", tdef->table_name );
@@ -206,7 +207,7 @@ export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_expo
                 }
                 fprintf( stdout, " )%s", stage == POST_DATA ? ";\n" : "" );
             }
-        } else if( ALL_INDEXES == filter || ALL_BUT_PKEYS ) {
+        } else if( ALL_INDEXES == filter || ALL_BUT_PKEYS == filter ) {
             fprintf( stdout, "CREATE INDEX %s ON %s( ", idef->index_name, tdef->table_name );
             for( fidx = 0; fidx < idef->nfields; ++fidx ) {
                 if( fidx ) {fputs( ", ", stdout ); }
@@ -222,7 +223,7 @@ export_indexes( db_t hdb, db_tabledef_t * tdef, export_stage_t stage, index_expo
  *  Export table schema & data.
  *  Export table's data before foreign keys, indexes and primary keys ( except clustered tables ).
  */
-int
+static int
 export_table( db_t hdb, const char * tname, export_stage_t stage )
 {
     int rc = EXIT_FAILURE;
@@ -245,7 +246,7 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
             if( EXIT_SUCCESS == rc ) {
                 if( DB_TABLETYPE_CLUSTERED == tdef.table_type ) {
                     fputs( ",\n\t", stdout );
-                    rc = export_indexes( hdb, &tdef, stage, PKEYS_ONLY );
+                    rc = export_indexes( &tdef, stage, PKEYS_ONLY );
                 }
                 fprintf( stdout, "\n) %s;\n", DB_TABLETYPE_CLUSTERED == tdef.table_type ? "CLUSTER BY PRIMARY KEY" : "" );
             }
@@ -259,12 +260,12 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
 
         } else {
             // Post data definitions
-            rc = export_indexes( hdb, &tdef, stage, DB_TABLETYPE_CLUSTERED == tdef.table_type ? ALL_BUT_PKEYS : ALL_INDEXES );
+            rc = export_indexes( &tdef, stage, DB_TABLETYPE_CLUSTERED == tdef.table_type ? ALL_BUT_PKEYS : ALL_INDEXES );
         }
 
     }
     else {
-        print_error_message( NULL, "raised by db_describe_table() on %s table", tname );
+        print_error_message( "raised by db_describe_table() on %s table", tname );
     }
 
     return rc;
@@ -273,7 +274,7 @@ export_table( db_t hdb, const char * tname, export_stage_t stage )
 /*
  *  Export all tables' schema (without fkeys and indexes) and data
  */
-int
+static int
 export_tables( db_t hdb, export_stage_t stage )
 {
     int rc = EXIT_FAILURE;
@@ -302,7 +303,7 @@ export_tables( db_t hdb, export_stage_t stage )
 /*
  *  Export sequences
  */
-int
+static int
 export_sequences( db_t hdb )
 {
     int rc = EXIT_FAILURE;

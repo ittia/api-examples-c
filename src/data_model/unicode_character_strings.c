@@ -144,7 +144,7 @@ print_error_message( const char * message, ... )
     va_end( va );
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -177,7 +177,7 @@ static storage_t texts[] = {
     { 8, "No Content",  "中身がありません", "Aucun contenu",    "No hay contenido", "Нет контента"  },
 };
 
-int
+static int
 load_data( db_t hdb )
 {
     db_result_t rc = DB_OK;
@@ -213,7 +213,7 @@ load_data( db_t hdb )
     return DB_OK == rc ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int
+static int
 find_text( db_t hdb, const char * textid, const char * locale )
 {
     int rc = EXIT_FAILURE;
@@ -288,7 +288,7 @@ example_main(int argc, char **argv)
                  "    messageid - Integer in range [1-%d]. '1' by default\n"
                  "    locale    - One of en, jp, fr, es, ru. 'ru' by default\n"
                  "",
-                 argv[0], DB_ARRAY_DIM(texts)
+                 argv[0], (int)DB_ARRAY_DIM(texts)
                  );
     }
 

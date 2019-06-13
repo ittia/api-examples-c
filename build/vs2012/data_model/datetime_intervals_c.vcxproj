@@ -52,7 +52,8 @@
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
@@ -173,15 +174,18 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\common\main.c" />
     <ClCompile Include="..\..\..\src\common\db_main.c" />
+    <ClCompile Include="..\..\..\src\common\dbs_sql_line_shell.c" />
     <ClCompile Include="..\..\..\ittiadb\src\dbsupport\dbs_schema.c" />
     <ClCompile Include="..\..\..\ittiadb\src\dbsupport\dbs_error_info.c" />
     <ClCompile Include="..\..\..\src\data_model\datetime_intervals.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\common\portable_inttypes.h" />
+    <ClInclude Include="..\..\..\src\common\dbs_sql_line_shell.h" />
     <ClInclude Include="..\..\..\ittiadb\src\dbsupport\dbs_schema.h" />
     <ClInclude Include="..\..\..\ittiadb\src\dbsupport\dbs_error_info.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
 </Project>

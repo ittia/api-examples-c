@@ -29,6 +29,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include "schema_upgrade_schema.h"
 
@@ -86,7 +87,7 @@ print_error_message( const char * message, db_cursor_t cursor )
 /**
  * Set schema version of DB
  */
-void
+static void
 set_schema_version( db_t hdb, int version )
 {
     /* Use manual binding both to seek and update. */
@@ -124,7 +125,7 @@ set_schema_version( db_t hdb, int version )
 /**
    Get schema version of DB
  */
-int
+static int
 get_schema_version( db_t hdb )
 {
     /* Use manual binding both to seek and update. */
@@ -158,7 +159,7 @@ get_schema_version( db_t hdb )
  */
 typedef int (*InitDataCallback)( db_t db, int version );
 
-db_t
+static db_t
 create_database(char* database_name, dbs_versioned_schema_def_t *versioned_schema, InitDataCallback cb)
 {
     db_t hdb;
@@ -189,7 +190,7 @@ create_database(char* database_name, dbs_versioned_schema_def_t *versioned_schem
 
 typedef int (*UpgradeCallback)( db_t db, int old_version, int new_version );
 
-db_t
+static db_t
 open_database(char* database_name, dbs_versioned_schema_def_t *versioned_schema, UpgradeCallback cb)
 {
     db_t hdb;
@@ -239,7 +240,7 @@ open_database(char* database_name, dbs_versioned_schema_def_t *versioned_schema,
     return hdb;
 }
 
-int
+static int
 init_data_cb( db_t hdb, int version )
 {
     db_result_t rc = DB_OK;
@@ -403,6 +404,8 @@ upgrade_to_schema_v2( db_t hdb )
             print_error_message( "Couldn't create v2 pkey index", c );
         }
     }
+
+    return DB_OK;
 }
 
 static db_result_t
@@ -448,15 +451,21 @@ example_main(int argc, char **argv)
     db_shutdown( hdb_upgrade, 0, NULL );
     hdb = open_database( EXAMPLE_UPGRADE_DATABASE, &v2_schema, &upgrade_schema_cb );
 
-    if( hdb != NULL ) {
+    if ( hdb != NULL ) {
         int v = get_schema_version( hdb_upgrade );
+
+        printf("Enter SQL statements or an empty line to exit\n");
+        dbs_sql_line_shell(hdb, EXAMPLE_UPGRADE_DATABASE, stdin, stdout, stderr);
+
         db_shutdown( hdb_upgrade, 0, NULL );
         db_shutdown( hdb, 0, NULL );
         if (v == v2_schema.version) {
             return EXIT_SUCCESS;
         }
     }
-    db_shutdown( hdb_upgrade, 0, NULL );
-    db_shutdown( hdb, 0, NULL );
+    else {
+        db_shutdown( hdb_upgrade, 0, NULL );
+        db_shutdown( hdb, 0, NULL );
+    }
     return EXIT_FAILURE;
 }

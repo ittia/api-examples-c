@@ -6,7 +6,7 @@ setting ITTIA_DB_HOME {
 	default = /opt/ittiadb;
 }
 
-if ( $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
+if ( $toolset == vs2019 ||  $toolset == vs2017 || $toolset == vs2015 || $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
 	ITTIA_DB_HOME = @srcdir/ittiadb;
 }
 
@@ -19,7 +19,7 @@ template api_ittia_db_c : include_ittia_db {
 	libs += ittiasql;
 
 	ittiasql_dll = @srcdir/ittiadb/bin/ittiasql.dll;
-	if ( $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
+	if ( $toolset == vs2019 ||  $toolset == vs2017 || $toolset == vs2015 || $toolset == vs2013 || $toolset == vs2012 || $toolset == vs2010 ) {
 		post-build-commands += "copy \"$(ittiasql_dll)\" \"\$(OutDir)\"";
 	}
 }

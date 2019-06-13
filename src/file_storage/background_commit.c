@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -71,7 +72,7 @@ print_error_message( const char * message, db_cursor_t cursor )
     }
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema, db_file_storage_config_t * storage_cfg)
 {
     db_t hdb;
@@ -101,7 +102,7 @@ typedef struct {
     int forced_tx;
 } trans_stat_t;
 
-int check_data( db_t hdb, const trans_stat_t * stat )
+static int check_data( db_t hdb, const trans_stat_t * stat )
 {
     int rc = EXIT_FAILURE;
     db_result_t db_rc = DB_OK;
@@ -160,12 +161,11 @@ int check_data( db_t hdb, const trans_stat_t * stat )
 
     db_close_cursor( c );
     db_free_row( row );
-    db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
     return rc;
 }
 
-int
+static int
 perform_transactions( db_t hdb, trans_stat_t *stat )
 {
     int i;
@@ -244,6 +244,10 @@ example_main(int argc, char **argv)
 
     rc = check_data( hdb, &stat );
 
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
+    db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
 exit:
     return rc;

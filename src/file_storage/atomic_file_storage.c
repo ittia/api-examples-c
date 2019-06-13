@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -75,20 +76,20 @@ int
 example_main(int argc, char **argv)
 {
     int rc = EXIT_FAILURE;
-    int i;
     db_t hdb;
     db_file_storage_config_t storage_cfg;
     static storage_t rows2ins[] = {
         { "ansi_str1",  1,  1.231, "utf8" },
         { "ansi_str2",    2,  2.231, "utf8" },
-        { "ansi_str3",    3,  3.231, "УТФ-8" },
+        { "ansi_str3",    3,  3.231, "\xD0\xA3\xD0\xA2\xD0\xA4-8" },
         { "ansi_str4",    4,  4.231, "utf8" },
         { "ansi_str5",    5,  5.231, "utf8" },
     };
     db_row_t row;
     db_table_cursor_t p = {
         NULL,   //< No index
-        DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE
+        DB_CAN_MODIFY | DB_LOCK_EXCLUSIVE,
+        0
     };
     db_cursor_t c;
     db_result_t db_rc;
@@ -152,15 +153,18 @@ example_main(int argc, char **argv)
     // Open cursor
     c = db_open_table_cursor(hdb, STORAGE_TABLE, &p);
 
+    /* Insert and commit the first three records. */
     db_rc = db_begin_tx( hdb, 0 );
-    /* Insert loop. Commit after inserting 3 records; don't commit the last 2 rows. */
-    for( i = 0; i < DB_ARRAY_DIM(rows2ins) && DB_OK == db_rc; ++i ) {
-        db_rc = db_insert(c, row, &rows2ins[i], 0);
-        if( i == 2 ) {
-            db_rc = db_commit_tx( hdb, 0 );
-            db_rc = db_begin_tx( hdb, 0 );
-        }
-    }
+    db_rc = db_insert(c, row, &rows2ins[0], 0);
+    db_rc = db_insert(c, row, &rows2ins[1], 0);
+    db_rc = db_insert(c, row, &rows2ins[2], 0);
+    db_rc = db_commit_tx( hdb, 0 );
+
+    /* Insert the last two records without committing. */
+    db_rc = db_begin_tx( hdb, 0 );
+    db_rc = db_insert(c, row, &rows2ins[3], 0);
+    db_rc = db_insert(c, row, &rows2ins[4], 0);
+
     if( DB_OK != db_rc ) {
         print_error_message( "Error inserting or commiting\n", c );
     }
@@ -209,6 +213,10 @@ example_main(int argc, char **argv)
 
     db_close_cursor( c );
     db_free_row( row );
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     // close source db
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 

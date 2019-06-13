@@ -1,5 +1,6 @@
 import common/common.bkl;
 
+submodule application/application.bkl;
 submodule file_storage/file_storage.bkl;
 submodule memory_storage/memory_storage.bkl;
 submodule error_handling/error_handling.bkl;

@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*                                                                        */
-/*      Copyright (c) 2005-2015 by ITTIA L.L.C. All rights reserved.      */
+/*      Copyright (c) 2005-2019 by ITTIA L.L.C. All rights reserved.      */
 /*                                                                        */
 /*  This software is copyrighted by and is the sole property of ITTIA     */
 /*  L.L.C.  All rights, title, ownership, or other interests in the       */
@@ -40,7 +40,7 @@ int db_main(int argc, char* argv[])
         db_lm_statistics_t lm_stats;
         db_done_t done = { NULL, &api_stats, &lm_stats };
 
-#ifdef _DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
         /* Enable collection of statistics. */
         db_api_statistics(NULL, DB_STATISTICS_ENABLE);
         db_lm_statistics(NULL, DB_STATISTICS_ENABLE);

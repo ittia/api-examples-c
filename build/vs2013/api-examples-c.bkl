@@ -6,6 +6,7 @@ archs = x86 x86_64;
 import ../deps/ittiadb_sdk.bkl;
 import ../../src/common/common.bkl;
 
+submodule application.bkl;
 submodule file_storage.bkl;
 submodule memory_storage.bkl;
 submodule error_handling.bkl;

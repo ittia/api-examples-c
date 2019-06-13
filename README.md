@@ -36,4 +36,4 @@ These examples, like ITTIA DB SQL itself, are cross-platform and can be compiled
 
 If you extract the evaluation kit to the root directory instead, `make` can be run with no arguments.
 
-[1]: http://www.ittia.com/products/embedded/evaluation
+[1]: https://www.ittia.com/products/ittia-db-sql/evaluation

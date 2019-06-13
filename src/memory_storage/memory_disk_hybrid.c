@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -65,8 +66,8 @@ static int cache_del_chunks[ CT_GUARD ] = { 1, 100 };
             print_error_message(m, c); }              \
 } while(0)
 
-int sdb_merge_mem_cache_to_disk();
-int resolve_ip_by_hostname( const char * hostname, char *ip);
+static int sdb_merge_mem_cache_to_disk();
+static int resolve_ip_by_hostname( const char * hostname, char *ip);
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
 static int snprintf( char *outBuf, size_t size, const char *format, ... )
@@ -168,7 +169,7 @@ open_or_create_database(char* database_name, dbs_schema_def_t *schema, db_storag
 }
 
 // Forward declarations
-int sdb_copy_disk_to_mem_cache();
+static int sdb_copy_disk_to_mem_cache();
 static void open_sequences(db_t hdb);
 static void close_sequences();
 static void generate_hostname( char * );
@@ -226,6 +227,9 @@ example_main(int argc, char **argv)
         fprintf( stderr, "Couldn't load in-mem cache data\n" );
     }
 
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 
 exit:
@@ -238,7 +242,8 @@ exit:
  *  For simplicity of our example, suppose dns request has always successfull result, and each request
  *  always returns different ip-addreses if even hostname is the same.
  */
-void do_dns_server_request( const char * hostname, char * ip )
+static void
+do_dns_server_request( const char * hostname, char * ip )
 {
     static int ip_idx = 0;
     snprintf( ip, MAX_IP_LEN, "%d.%d.%d.%d", 192, 168 + ip_idx++ % 80, 250 - ip_idx % 242, 1 + ip_idx % 250 );
@@ -327,7 +332,7 @@ static int sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *result );
    - If search both chaches failed, request 'dns-server' (fake generator in this example) to resolve. Put resolved
      data in both in-mem & on-disk caches;
  */
-int
+static int
 resolve_ip_by_hostname( const char * hostname, char *ip)
 {
     int rc = DB_FAILURE;
@@ -443,7 +448,8 @@ sdb_shape_cache( cache_type_t ctype )
     return rc;
 }
 
-int sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *data )
+static int
+sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *data )
 {
     int rc = DB_FAILURE;
     db_row_t row;
@@ -482,7 +488,7 @@ int sdb_put_into_cache( cache_type_t ctype, cache_db_row_t *data )
 }
 
 /// Copy the most recent cache records into in-mem cache ( on application start )
-int
+static int
 sdb_copy_disk_to_mem_cache()
 {
     int rc = DB_NOERROR;
@@ -528,7 +534,7 @@ sdb_copy_disk_to_mem_cache()
 }
 
 /// When application starts copy the most recent cache records into in-mem cache
-int
+static int
 sdb_merge_mem_cache_to_disk()
 {
     int rc = DB_NOERROR;

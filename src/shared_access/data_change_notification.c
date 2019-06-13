@@ -38,7 +38,6 @@
 #include "thread_utils.h"
 
 #define DB_FILENAME "data_change_notification.ittiadb"
-#define DB_ALIAS "dcn.db"
 #define ROW_COUNT 10    //< count of rows to insert, update and delete
 
 /* Database schema: table, field, and index definitions. */
@@ -62,7 +61,7 @@ static db_indexdef_t index_t_id = {
     DB_ALLOC_INITIALIZER(),
     DB_INDEXTYPE_DEFAULT,
     "ID",
-    DB_MULTISET_INDEX,
+    DB_PRIMARY_INDEX,
     DB_ARRAY_DIM(index_t_id_fields),
     index_t_id_fields,
 };
@@ -140,7 +139,7 @@ print_error_message( db_cursor_t cursor, const char * message, ... )
 /**
  * Helper function to create DB
  */
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -169,23 +168,23 @@ char changes_complete = 0;
 
 /// Arguments to changes procedure
 typedef struct {
-    char dbname[ FILENAME_MAX + 1 ];    ///< Backup source db name
     int rc;                             ///< Result code
 } change_args_t;
 
 static mutex_t mutex;
 
 /// Backup thread perform this:
-void changes_proc( change_args_t * data )
+static void
+changes_proc( change_args_t * data )
 {
     db_t hdb;
     db_cursor_t t_cursor;
     db_row_t t_row;
     int i;
-    storage_t row_data = { 0, 0, 0, DB_NTS };
+    storage_t row_data = { 0, 0, "", DB_NTS };
     db_result_t dbrc = DB_OK;
 
-    hdb = db_open_file_storage(data->dbname, NULL);
+    hdb = db_open_file_storage(DB_FILENAME, NULL);
 
     if(hdb) {
         t_row = db_alloc_row(t_binds, DB_ARRAY_DIM(t_binds));
@@ -211,13 +210,14 @@ void changes_proc( change_args_t * data )
         while( !db_eof(t_cursor) && DB_OK == dbrc ) {
             db_begin_tx(hdb, 0);
 
-            row_data.id = ++i;
+            db_fetch(t_cursor, t_row, &row_data);
             row_data.n = ROW_COUNT / 2 - i;
-            sprintf(row_data.s, "%d", i);
             dbrc = db_update(t_cursor, t_row, &row_data);
 
             dbrc = DB_OK == dbrc ? db_commit_tx(hdb, 0) : dbrc;
             db_seek_next(t_cursor);
+
+            ++i;
         }
         // Delete all rows
         db_seek_first(t_cursor);
@@ -242,14 +242,21 @@ void changes_proc( change_args_t * data )
     mutex_unlock( &mutex );
 }
 
-void get_row_data( db_row_t row, storage_t * data)
+static void
+get_row_data( db_row_t row, storage_t * data)
 {
-    db_get_field_data( row, T_ID, DB_VARTYPE_UINT32, &data->id, sizeof( uint32_t ) );
-    db_get_field_data( row, T_N, DB_VARTYPE_SINT32, &data->n,   sizeof( int32_t ) );
-    db_get_field_data( row, T_S, DB_VARTYPE_UTF8STR, &data->s,  MAX_S_LEN );
+    if (DB_LEN_FAIL == db_get_field_data( row, T_ID, DB_VARTYPE_UINT32, &data->id, sizeof( uint32_t ) ) ) {
+        data->id = 0;
+    }
+    if (DB_LEN_FAIL == db_get_field_data( row, T_N, DB_VARTYPE_SINT32, &data->n,   sizeof( int32_t ) ) ) {
+        data->n = -1;
+    }
+    if (DB_LEN_FAIL == db_get_field_data( row, T_S, DB_VARTYPE_UTF8STR, &data->s,  MAX_S_LEN ) ) {
+        data->s[0] = '\0';
+    }
 }
 
-int
+static int
 watch_notifications()
 {
     db_t hdb;
@@ -355,30 +362,19 @@ example_main(int argc, char **argv)
         goto exit;
     }
 
-    db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);  // A storage cannot be mounted while open.
-    if( DB_OK == db_mount_storage( DB_FILENAME, DB_ALIAS, NULL ) ) {
-        /*
-         *  Start DbServer
-         */
-        db_server_config_t srv_config;
-        db_server_config_init( &srv_config );
+    {
+        os_thread_t *tid;           // Changes thread
+        change_args_t change_args = { EXIT_SUCCESS }; // ... and its parameters
 
-        if( DB_OK == db_server_start( &srv_config ) ) {
-            os_thread_t *tid;           // Changes thread
-            change_args_t change_args = { DB_ALIAS }; // ... and its params
+        // Spawn child, data-changing thread
+        rc = DB_NOERROR == thread_spawn( (thread_proc_t)changes_proc, &change_args, THREAD_JOINABLE, &tid ) ? EXIT_SUCCESS : EXIT_FAILURE;
 
-            fprintf( stdout, "Server started. DB [%s] mounted with alias [%s]\n", DB_FILENAME, DB_ALIAS );
-            // Spawn child, data-changing thread
-            rc = DB_NOERROR == thread_spawn( (thread_proc_t)changes_proc, &change_args, THREAD_JOINABLE, &tid ) ? EXIT_SUCCESS : EXIT_FAILURE;
+        // Main thread goes to watching
+        rc = rc || watch_notifications(); //< Replace this with some real exit condition
 
-            // Main thread goes to watching
-            rc = rc || watch_notifications(); //< Replace this with some real exit condition
-            db_server_stop( 0 );
-
-            // Clean data-changing thread
-            thread_join( tid );
-            rc = rc || change_args.rc;
-        }
+        // Clean data-changing thread
+        thread_join( tid );
+        rc = rc || change_args.rc;
     }
 
     mutex_destroy( &mutex );

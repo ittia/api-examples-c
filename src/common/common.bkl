@@ -3,9 +3,11 @@ template src_examples_common {
 
 	headers {
 		portable_inttypes.h
+		dbs_sql_line_shell.h
 	}
 	sources {
 		main.c
 		db_main.c
+		dbs_sql_line_shell.c
 	}
 }

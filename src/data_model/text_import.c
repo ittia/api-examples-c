@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,7 +73,7 @@ print_error_message( const char * message, ... )
     va_end( va );
 }
 
-db_t
+static db_t
 create_database(char* database_name, dbs_schema_def_t *schema)
 {
     db_t hdb;
@@ -110,6 +111,11 @@ example_main(int argc, char **argv)
     int rc = EXIT_FAILURE;
     if( hdb ) {
         rc = csv_import( hdb, "storage", csv, strlen(csv), 0 );
+
+        printf("Enter SQL statements or an empty line to exit\n");
+        dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
+
+        db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
     }
 
     return rc;

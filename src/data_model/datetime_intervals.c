@@ -28,6 +28,7 @@
 
 #include "dbs_schema.h"
 #include "dbs_error_info.h"
+#include "dbs_sql_line_shell.h"
 #include "portable_inttypes.h"
 
 #include <stdio.h>
@@ -125,7 +126,7 @@ execute_command( db_t hdb, const char* stmt, db_cursor_t* cursor, db_row_t param
     return EXIT_SUCCESS;
 }
 
-int
+static int
 datetime_example( db_t hdb )
 {
     int         rc = EXIT_FAILURE;
@@ -303,8 +304,6 @@ datetime_example( db_t hdb )
             goto clean_exit;
         }
 
-        db_free_row(params);
-
         r = db_alloc_cursor_row(sql_cursor);
 
         if( DB_OK != db_seek_first(sql_cursor) || db_eof(sql_cursor) )
@@ -321,6 +320,8 @@ datetime_example( db_t hdb )
             goto clean_exit;
         }
         db_free_row(r);
+
+        db_free_row(params);
         db_close_cursor(sql_cursor);
     }
 
@@ -390,6 +391,9 @@ example_main(int argc, char **argv)
     if( 0 == rc ) {
         db_commit_tx( hdb, 0 );
     }
+
+    printf("Enter SQL statements or an empty line to exit\n");
+    dbs_sql_line_shell(hdb, EXAMPLE_DATABASE, stdin, stdout, stderr);
 
     db_shutdown(hdb, DB_SOFT_SHUTDOWN, NULL);
 

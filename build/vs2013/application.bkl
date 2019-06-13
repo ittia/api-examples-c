@@ -1,0 +1,2 @@
+srcdir application;
+import ../../src/application/application.bkl;

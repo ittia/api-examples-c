@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -45,10 +45,6 @@ RANLIB ?= ranlib
 CC := cc
 CXX := c++
 
-# The directory for the build files, may be overridden on make command line.
-builddir = .
-
-
 # ------------
 # Configurable settings:
 # 
@@ -58,7 +54,10 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: file_storage memory_storage error_handling data_model security shared_access sql
+all: application file_storage memory_storage error_handling data_model security shared_access sql
+
+application:
+	$(MAKE) -C src/application -f GNUmakefile all
 
 file_storage:
 	$(MAKE) -C src/file_storage -f GNUmakefile all
@@ -82,8 +81,7 @@ sql:
 	$(MAKE) -C src/sql -f GNUmakefile all
 
 clean:
-	rm -f *.o
-	rm -f *.d
+	$(MAKE) -C src/application -f GNUmakefile clean
 	$(MAKE) -C src/file_storage -f GNUmakefile clean
 	$(MAKE) -C src/memory_storage -f GNUmakefile clean
 	$(MAKE) -C src/error_handling -f GNUmakefile clean
@@ -92,7 +90,4 @@ clean:
 	$(MAKE) -C src/shared_access -f GNUmakefile clean
 	$(MAKE) -C src/sql -f GNUmakefile clean
 
-.PHONY: all clean file_storage memory_storage error_handling data_model security shared_access sql
-
-# Dependencies tracking:
--include *.d
+.PHONY: all clean application file_storage memory_storage error_handling data_model security shared_access sql

@@ -22,14 +22,14 @@ ifeq ($(config),release)
 override config := Release
 endif
 ifeq ($(config),Debug)
-CPPFLAGS ?= -DDEBUG
-CFLAGS ?= -g -O0
-CXXFLAGS ?= -g -O0
-LDFLAGS ?= -g
+override CPPFLAGS += -DDEBUG
+override CFLAGS += -g -O0
+override CXXFLAGS += -g -O0
+override LDFLAGS += -g
 else ifeq ($(config),Release)
-CPPFLAGS ?= -DNDEBUG
-CFLAGS ?= -O2
-CXXFLAGS ?= -O2
+override CPPFLAGS += -DNDEBUG
+override CFLAGS += -O2
+override CXXFLAGS += -O2
 else ifneq (,$(config))
 $(warning Unknown configuration "$(config)")
 endif
@@ -48,6 +48,11 @@ CXX := c++
 # The directory for the build files, may be overridden on make command line.
 builddir = .
 
+ifneq ($(builddir),.)
+_builddir := $(if $(findstring $(abspath $(builddir)),$(builddir)),,../../)$(builddir)/src/data_model/
+_builddir_error := $(shell mkdir -p $(_builddir) 2>&1)
+$(if $(_builddir_error),$(error Failed to create build directory: $(_builddir_error)))
+endif
 
 # ------------
 # Configurable settings:
@@ -58,173 +63,194 @@ ITTIA_DB_HOME ?= /opt/ittiadb
 
 # ------------
 
-all: builddir-data-model ../../$(builddir)/src/data_model/schema_upgrade_c ../../$(builddir)/src/data_model/foreign_key_constraints_c ../../$(builddir)/src/data_model/unicode_character_strings_c ../../$(builddir)/src/data_model/datetime_intervals_c ../../$(builddir)/src/data_model/text_import_c ../../$(builddir)/src/data_model/text_export_c ../../$(builddir)/src/data_model/sql_export_c
+all: builddir-data-model $(_builddir)schema_upgrade_c $(_builddir)foreign_key_constraints_c $(_builddir)unicode_character_strings_c $(_builddir)datetime_intervals_c $(_builddir)text_import_c $(_builddir)text_export_c $(_builddir)sql_export_c
 
 builddir-data-model:
-	@mkdir -p ../../$(builddir)/src/data_model
+	@mkdir -p $(_builddir).
 
-../../$(builddir)/src/data_model/schema_upgrade_c: ../../$(builddir)/src/data_model/schema_upgrade_c_main.o ../../$(builddir)/src/data_model/schema_upgrade_c_db_main.o ../../$(builddir)/src/data_model/schema_upgrade_c_dbs_schema.o ../../$(builddir)/src/data_model/schema_upgrade_c_dbs_error_info.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema_v1.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/schema_upgrade_c_main.o ../../$(builddir)/src/data_model/schema_upgrade_c_db_main.o ../../$(builddir)/src/data_model/schema_upgrade_c_dbs_schema.o ../../$(builddir)/src/data_model/schema_upgrade_c_dbs_error_info.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema_v1.o ../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)schema_upgrade_c: $(_builddir)schema_upgrade_c_main.o $(_builddir)schema_upgrade_c_db_main.o $(_builddir)schema_upgrade_c_dbs_sql_line_shell.o $(_builddir)schema_upgrade_c_dbs_schema.o $(_builddir)schema_upgrade_c_dbs_error_info.o $(_builddir)schema_upgrade_c_schema_upgrade.o $(_builddir)schema_upgrade_c_schema_upgrade_schema_v1.o $(_builddir)schema_upgrade_c_schema_upgrade_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)schema_upgrade_c_main.o $(_builddir)schema_upgrade_c_db_main.o $(_builddir)schema_upgrade_c_dbs_sql_line_shell.o $(_builddir)schema_upgrade_c_dbs_schema.o $(_builddir)schema_upgrade_c_dbs_error_info.o $(_builddir)schema_upgrade_c_schema_upgrade.o $(_builddir)schema_upgrade_c_schema_upgrade_schema_v1.o $(_builddir)schema_upgrade_c_schema_upgrade_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/schema_upgrade_c_main.o: ../common/main.c
+$(_builddir)schema_upgrade_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_db_main.o: ../common/db_main.c
+$(_builddir)schema_upgrade_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)schema_upgrade_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)schema_upgrade_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)schema_upgrade_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade.o: schema_upgrade.c
+$(_builddir)schema_upgrade_c_schema_upgrade.o: schema_upgrade.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples schema_upgrade.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema_v1.o: schema_upgrade_schema_v1.c
+$(_builddir)schema_upgrade_c_schema_upgrade_schema_v1.o: schema_upgrade_schema_v1.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples schema_upgrade_schema_v1.c
 
-../../$(builddir)/src/data_model/schema_upgrade_c_schema_upgrade_schema.o: schema_upgrade_schema.c
+$(_builddir)schema_upgrade_c_schema_upgrade_schema.o: schema_upgrade_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples schema_upgrade_schema.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c: ../../$(builddir)/src/data_model/foreign_key_constraints_c_main.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_db_main.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_schema.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_error_info.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints_db_schema.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/foreign_key_constraints_c_main.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_db_main.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_schema.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_error_info.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints.o ../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)foreign_key_constraints_c: $(_builddir)foreign_key_constraints_c_main.o $(_builddir)foreign_key_constraints_c_db_main.o $(_builddir)foreign_key_constraints_c_dbs_sql_line_shell.o $(_builddir)foreign_key_constraints_c_dbs_schema.o $(_builddir)foreign_key_constraints_c_dbs_error_info.o $(_builddir)foreign_key_constraints_c_foreign_key_constraints.o $(_builddir)foreign_key_constraints_c_foreign_key_constraints_db_schema.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)foreign_key_constraints_c_main.o $(_builddir)foreign_key_constraints_c_db_main.o $(_builddir)foreign_key_constraints_c_dbs_sql_line_shell.o $(_builddir)foreign_key_constraints_c_dbs_schema.o $(_builddir)foreign_key_constraints_c_dbs_error_info.o $(_builddir)foreign_key_constraints_c_foreign_key_constraints.o $(_builddir)foreign_key_constraints_c_foreign_key_constraints_db_schema.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_main.o: ../common/main.c
+$(_builddir)foreign_key_constraints_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_db_main.o: ../common/db_main.c
+$(_builddir)foreign_key_constraints_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)foreign_key_constraints_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)foreign_key_constraints_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)foreign_key_constraints_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints.o: foreign_key_constraints.c
+$(_builddir)foreign_key_constraints_c_foreign_key_constraints.o: foreign_key_constraints.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples foreign_key_constraints.c
 
-../../$(builddir)/src/data_model/foreign_key_constraints_c_foreign_key_constraints_db_schema.o: foreign_key_constraints_db_schema.c
+$(_builddir)foreign_key_constraints_c_foreign_key_constraints_db_schema.o: foreign_key_constraints_db_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples foreign_key_constraints_db_schema.c
 
-../../$(builddir)/src/data_model/unicode_character_strings_c: ../../$(builddir)/src/data_model/unicode_character_strings_c_main.o ../../$(builddir)/src/data_model/unicode_character_strings_c_db_main.o ../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_schema.o ../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_error_info.o ../../$(builddir)/src/data_model/unicode_character_strings_c_unicode_character_strings.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/unicode_character_strings_c_main.o ../../$(builddir)/src/data_model/unicode_character_strings_c_db_main.o ../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_schema.o ../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_error_info.o ../../$(builddir)/src/data_model/unicode_character_strings_c_unicode_character_strings.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)unicode_character_strings_c: $(_builddir)unicode_character_strings_c_main.o $(_builddir)unicode_character_strings_c_db_main.o $(_builddir)unicode_character_strings_c_dbs_sql_line_shell.o $(_builddir)unicode_character_strings_c_dbs_schema.o $(_builddir)unicode_character_strings_c_dbs_error_info.o $(_builddir)unicode_character_strings_c_unicode_character_strings.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)unicode_character_strings_c_main.o $(_builddir)unicode_character_strings_c_db_main.o $(_builddir)unicode_character_strings_c_dbs_sql_line_shell.o $(_builddir)unicode_character_strings_c_dbs_schema.o $(_builddir)unicode_character_strings_c_dbs_error_info.o $(_builddir)unicode_character_strings_c_unicode_character_strings.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/unicode_character_strings_c_main.o: ../common/main.c
+$(_builddir)unicode_character_strings_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/unicode_character_strings_c_db_main.o: ../common/db_main.c
+$(_builddir)unicode_character_strings_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)unicode_character_strings_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)unicode_character_strings_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/unicode_character_strings_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)unicode_character_strings_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/unicode_character_strings_c_unicode_character_strings.o: unicode_character_strings.c
+$(_builddir)unicode_character_strings_c_unicode_character_strings.o: unicode_character_strings.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples unicode_character_strings.c
 
-../../$(builddir)/src/data_model/datetime_intervals_c: ../../$(builddir)/src/data_model/datetime_intervals_c_main.o ../../$(builddir)/src/data_model/datetime_intervals_c_db_main.o ../../$(builddir)/src/data_model/datetime_intervals_c_dbs_schema.o ../../$(builddir)/src/data_model/datetime_intervals_c_dbs_error_info.o ../../$(builddir)/src/data_model/datetime_intervals_c_datetime_intervals.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/datetime_intervals_c_main.o ../../$(builddir)/src/data_model/datetime_intervals_c_db_main.o ../../$(builddir)/src/data_model/datetime_intervals_c_dbs_schema.o ../../$(builddir)/src/data_model/datetime_intervals_c_dbs_error_info.o ../../$(builddir)/src/data_model/datetime_intervals_c_datetime_intervals.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)datetime_intervals_c: $(_builddir)datetime_intervals_c_main.o $(_builddir)datetime_intervals_c_db_main.o $(_builddir)datetime_intervals_c_dbs_sql_line_shell.o $(_builddir)datetime_intervals_c_dbs_schema.o $(_builddir)datetime_intervals_c_dbs_error_info.o $(_builddir)datetime_intervals_c_datetime_intervals.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)datetime_intervals_c_main.o $(_builddir)datetime_intervals_c_db_main.o $(_builddir)datetime_intervals_c_dbs_sql_line_shell.o $(_builddir)datetime_intervals_c_dbs_schema.o $(_builddir)datetime_intervals_c_dbs_error_info.o $(_builddir)datetime_intervals_c_datetime_intervals.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/datetime_intervals_c_main.o: ../common/main.c
+$(_builddir)datetime_intervals_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/datetime_intervals_c_db_main.o: ../common/db_main.c
+$(_builddir)datetime_intervals_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/datetime_intervals_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)datetime_intervals_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)datetime_intervals_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/datetime_intervals_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)datetime_intervals_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/datetime_intervals_c_datetime_intervals.o: datetime_intervals.c
+$(_builddir)datetime_intervals_c_datetime_intervals.o: datetime_intervals.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples datetime_intervals.c
 
-../../$(builddir)/src/data_model/text_import_c: ../../$(builddir)/src/data_model/text_import_c_main.o ../../$(builddir)/src/data_model/text_import_c_db_main.o ../../$(builddir)/src/data_model/text_import_c_dbs_schema.o ../../$(builddir)/src/data_model/text_import_c_dbs_error_info.o ../../$(builddir)/src/data_model/text_import_c_text_exchange_schema.o ../../$(builddir)/src/data_model/text_import_c_text_import.o ../../$(builddir)/src/data_model/text_import_c_csv_import_export.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/text_import_c_main.o ../../$(builddir)/src/data_model/text_import_c_db_main.o ../../$(builddir)/src/data_model/text_import_c_dbs_schema.o ../../$(builddir)/src/data_model/text_import_c_dbs_error_info.o ../../$(builddir)/src/data_model/text_import_c_text_exchange_schema.o ../../$(builddir)/src/data_model/text_import_c_text_import.o ../../$(builddir)/src/data_model/text_import_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)text_import_c: $(_builddir)text_import_c_main.o $(_builddir)text_import_c_db_main.o $(_builddir)text_import_c_dbs_sql_line_shell.o $(_builddir)text_import_c_dbs_schema.o $(_builddir)text_import_c_dbs_error_info.o $(_builddir)text_import_c_text_exchange_schema.o $(_builddir)text_import_c_text_import.o $(_builddir)text_import_c_csv_import_export.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)text_import_c_main.o $(_builddir)text_import_c_db_main.o $(_builddir)text_import_c_dbs_sql_line_shell.o $(_builddir)text_import_c_dbs_schema.o $(_builddir)text_import_c_dbs_error_info.o $(_builddir)text_import_c_text_exchange_schema.o $(_builddir)text_import_c_text_import.o $(_builddir)text_import_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/text_import_c_main.o: ../common/main.c
+$(_builddir)text_import_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/text_import_c_db_main.o: ../common/db_main.c
+$(_builddir)text_import_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/text_import_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)text_import_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)text_import_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/text_import_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)text_import_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/text_import_c_text_exchange_schema.o: text_exchange_schema.c
+$(_builddir)text_import_c_text_exchange_schema.o: text_exchange_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples text_exchange_schema.c
 
-../../$(builddir)/src/data_model/text_import_c_text_import.o: text_import.c
+$(_builddir)text_import_c_text_import.o: text_import.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples text_import.c
 
-../../$(builddir)/src/data_model/text_import_c_csv_import_export.o: csv_import_export.c
+$(_builddir)text_import_c_csv_import_export.o: csv_import_export.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples csv_import_export.c
 
-../../$(builddir)/src/data_model/text_export_c: ../../$(builddir)/src/data_model/text_export_c_main.o ../../$(builddir)/src/data_model/text_export_c_db_main.o ../../$(builddir)/src/data_model/text_export_c_dbs_schema.o ../../$(builddir)/src/data_model/text_export_c_dbs_error_info.o ../../$(builddir)/src/data_model/text_export_c_text_exchange_schema.o ../../$(builddir)/src/data_model/text_export_c_text_export.o ../../$(builddir)/src/data_model/text_export_c_csv_import_export.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/text_export_c_main.o ../../$(builddir)/src/data_model/text_export_c_db_main.o ../../$(builddir)/src/data_model/text_export_c_dbs_schema.o ../../$(builddir)/src/data_model/text_export_c_dbs_error_info.o ../../$(builddir)/src/data_model/text_export_c_text_exchange_schema.o ../../$(builddir)/src/data_model/text_export_c_text_export.o ../../$(builddir)/src/data_model/text_export_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)text_export_c: $(_builddir)text_export_c_main.o $(_builddir)text_export_c_db_main.o $(_builddir)text_export_c_dbs_sql_line_shell.o $(_builddir)text_export_c_dbs_schema.o $(_builddir)text_export_c_dbs_error_info.o $(_builddir)text_export_c_text_exchange_schema.o $(_builddir)text_export_c_text_export.o $(_builddir)text_export_c_csv_import_export.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)text_export_c_main.o $(_builddir)text_export_c_db_main.o $(_builddir)text_export_c_dbs_sql_line_shell.o $(_builddir)text_export_c_dbs_schema.o $(_builddir)text_export_c_dbs_error_info.o $(_builddir)text_export_c_text_exchange_schema.o $(_builddir)text_export_c_text_export.o $(_builddir)text_export_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/text_export_c_main.o: ../common/main.c
+$(_builddir)text_export_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/text_export_c_db_main.o: ../common/db_main.c
+$(_builddir)text_export_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/text_export_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)text_export_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)text_export_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/text_export_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)text_export_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/text_export_c_text_exchange_schema.o: text_exchange_schema.c
+$(_builddir)text_export_c_text_exchange_schema.o: text_exchange_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples text_exchange_schema.c
 
-../../$(builddir)/src/data_model/text_export_c_text_export.o: text_export.c
+$(_builddir)text_export_c_text_export.o: text_export.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples text_export.c
 
-../../$(builddir)/src/data_model/text_export_c_csv_import_export.o: csv_import_export.c
+$(_builddir)text_export_c_csv_import_export.o: csv_import_export.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples csv_import_export.c
 
-../../$(builddir)/src/data_model/sql_export_c: ../../$(builddir)/src/data_model/sql_export_c_main.o ../../$(builddir)/src/data_model/sql_export_c_db_main.o ../../$(builddir)/src/data_model/sql_export_c_dbs_schema.o ../../$(builddir)/src/data_model/sql_export_c_dbs_error_info.o ../../$(builddir)/src/data_model/sql_export_c_sql_export.o ../../$(builddir)/src/data_model/sql_export_c_csv_import_export.o
-	$(CXX) -o $@ $(LDFLAGS) ../../$(builddir)/src/data_model/sql_export_c_main.o ../../$(builddir)/src/data_model/sql_export_c_db_main.o ../../$(builddir)/src/data_model/sql_export_c_dbs_schema.o ../../$(builddir)/src/data_model/sql_export_c_dbs_error_info.o ../../$(builddir)/src/data_model/sql_export_c_sql_export.o ../../$(builddir)/src/data_model/sql_export_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
+$(_builddir)sql_export_c: $(_builddir)sql_export_c_main.o $(_builddir)sql_export_c_db_main.o $(_builddir)sql_export_c_dbs_sql_line_shell.o $(_builddir)sql_export_c_dbs_schema.o $(_builddir)sql_export_c_dbs_error_info.o $(_builddir)sql_export_c_sql_export.o $(_builddir)sql_export_c_csv_import_export.o
+	$(CXX) -o $@ $(LDFLAGS) $(_builddir)sql_export_c_main.o $(_builddir)sql_export_c_db_main.o $(_builddir)sql_export_c_dbs_sql_line_shell.o $(_builddir)sql_export_c_dbs_schema.o $(_builddir)sql_export_c_dbs_error_info.o $(_builddir)sql_export_c_sql_export.o $(_builddir)sql_export_c_csv_import_export.o -L$(ITTIA_DB_HOME)/lib -littiasql -pthread
 
-../../$(builddir)/src/data_model/sql_export_c_main.o: ../common/main.c
+$(_builddir)sql_export_c_main.o: ../common/main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/main.c
 
-../../$(builddir)/src/data_model/sql_export_c_db_main.o: ../common/db_main.c
+$(_builddir)sql_export_c_db_main.o: ../common/db_main.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/db_main.c
 
-../../$(builddir)/src/data_model/sql_export_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
+$(_builddir)sql_export_c_dbs_sql_line_shell.o: ../common/dbs_sql_line_shell.c
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples ../common/dbs_sql_line_shell.c
+
+$(_builddir)sql_export_c_dbs_schema.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_schema.c
 
-../../$(builddir)/src/data_model/sql_export_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
+$(_builddir)sql_export_c_dbs_error_info.o: $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples $(ITTIA_DB_HOME)/share/doc/ittiadb/examples/dbs_error_info.c
 
-../../$(builddir)/src/data_model/sql_export_c_sql_export.o: sql_export.c
+$(_builddir)sql_export_c_sql_export.o: sql_export.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples sql_export.c
 
-../../$(builddir)/src/data_model/sql_export_c_csv_import_export.o: csv_import_export.c
+$(_builddir)sql_export_c_csv_import_export.o: csv_import_export.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -MD -MP -pthread -I$(ITTIA_DB_HOME)/include -I../common -I$(ITTIA_DB_HOME)/share/doc/ittiadb/examples csv_import_export.c
 
 clean:
-	rm -f *.o
-	rm -f *.d
-	rm -f ../../$(builddir)/src/data_model/schema_upgrade_c
-	rm -f ../../$(builddir)/src/data_model/foreign_key_constraints_c
-	rm -f ../../$(builddir)/src/data_model/unicode_character_strings_c
-	rm -f ../../$(builddir)/src/data_model/datetime_intervals_c
-	rm -f ../../$(builddir)/src/data_model/text_import_c
-	rm -f ../../$(builddir)/src/data_model/text_export_c
-	rm -f ../../$(builddir)/src/data_model/sql_export_c
+	rm -f $(_builddir)*.o
+	rm -f $(_builddir)*.d
+	rm -f $(_builddir)schema_upgrade_c
+	rm -f $(_builddir)foreign_key_constraints_c
+	rm -f $(_builddir)unicode_character_strings_c
+	rm -f $(_builddir)datetime_intervals_c
+	rm -f $(_builddir)text_import_c
+	rm -f $(_builddir)text_export_c
+	rm -f $(_builddir)sql_export_c
 
 .PHONY: all clean builddir-data-model
 
 # Dependencies tracking:
--include *.d
+-include $(_builddir)*.d
