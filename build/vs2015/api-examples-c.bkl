@@ -1,7 +1,7 @@
 // Main bakefile for the ITTIA DB SQL C API examples.
 
 toolsets = vs2015;
-archs = x86 x86_64;
+archs = x86_64;
 
 import ../deps/ittiadb_sdk.bkl;
 import ../../src/common/common.bkl;

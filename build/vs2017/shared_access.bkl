@@ -1,0 +1,2 @@
+srcdir shared_access;
+import ../../src/shared_access/shared_access.bkl;

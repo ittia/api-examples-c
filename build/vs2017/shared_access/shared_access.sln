@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2003
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedded_database_server_c", "embedded_database_server_c.vcxproj", "{989B9772-3CA7-58B2-B1E1-F8399005D1A4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "online_backup_c", "online_backup_c.vcxproj", "{4BBAF5E1-6CEE-5AD5-A209-11B31CE58A3F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "data_change_notification_c", "data_change_notification_c.vcxproj", "{888419A2-6058-52D9-AAE7-75EF79F5CCFC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{989B9772-3CA7-58B2-B1E1-F8399005D1A4}.Debug|x64.ActiveCfg = Debug|x64
+		{989B9772-3CA7-58B2-B1E1-F8399005D1A4}.Debug|x64.Build.0 = Debug|x64
+		{989B9772-3CA7-58B2-B1E1-F8399005D1A4}.Release|x64.ActiveCfg = Release|x64
+		{989B9772-3CA7-58B2-B1E1-F8399005D1A4}.Release|x64.Build.0 = Release|x64
+		{4BBAF5E1-6CEE-5AD5-A209-11B31CE58A3F}.Debug|x64.ActiveCfg = Debug|x64
+		{4BBAF5E1-6CEE-5AD5-A209-11B31CE58A3F}.Debug|x64.Build.0 = Debug|x64
+		{4BBAF5E1-6CEE-5AD5-A209-11B31CE58A3F}.Release|x64.ActiveCfg = Release|x64
+		{4BBAF5E1-6CEE-5AD5-A209-11B31CE58A3F}.Release|x64.Build.0 = Release|x64
+		{888419A2-6058-52D9-AAE7-75EF79F5CCFC}.Debug|x64.ActiveCfg = Debug|x64
+		{888419A2-6058-52D9-AAE7-75EF79F5CCFC}.Debug|x64.Build.0 = Debug|x64
+		{888419A2-6058-52D9-AAE7-75EF79F5CCFC}.Release|x64.ActiveCfg = Release|x64
+		{888419A2-6058-52D9-AAE7-75EF79F5CCFC}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
